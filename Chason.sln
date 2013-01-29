@@ -1,0 +1,32 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Chason", "Chason\Chason.csproj", "{F9FF23D0-B631-45C5-84FE-E3ED3ABAA1FD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Chason.UnitTests", "Chason.UnitTests\Chason.UnitTests.csproj", "{0433642C-825A-430D-BCB0-6D0FF2717BC6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Chason.PerformanceTests", "Chason.PerformanceTests\Chason.PerformanceTests.csproj", "{9CC407A2-A07C-4C91-8FF9-35DEBC5EC319}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F9FF23D0-B631-45C5-84FE-E3ED3ABAA1FD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F9FF23D0-B631-45C5-84FE-E3ED3ABAA1FD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F9FF23D0-B631-45C5-84FE-E3ED3ABAA1FD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F9FF23D0-B631-45C5-84FE-E3ED3ABAA1FD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0433642C-825A-430D-BCB0-6D0FF2717BC6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0433642C-825A-430D-BCB0-6D0FF2717BC6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0433642C-825A-430D-BCB0-6D0FF2717BC6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0433642C-825A-430D-BCB0-6D0FF2717BC6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9CC407A2-A07C-4C91-8FF9-35DEBC5EC319}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9CC407A2-A07C-4C91-8FF9-35DEBC5EC319}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9CC407A2-A07C-4C91-8FF9-35DEBC5EC319}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9CC407A2-A07C-4C91-8FF9-35DEBC5EC319}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
