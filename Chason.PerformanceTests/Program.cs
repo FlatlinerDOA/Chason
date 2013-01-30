@@ -29,8 +29,8 @@ namespace Chason.PerformanceTests
             {
                 stopwatch.Reset();
                 stopwatch.Start();
-                PerfDataContract(seed, count);
-                PerfChason(seed, count);
+                SerializeDataContract(seed, count);
+                SerializeChason(seed, count);
                 stopwatch.Stop();
                 Console.WriteLine("Ticks: " + stopwatch.ElapsedTicks +
                 " mS: " + stopwatch.ElapsedMilliseconds);
@@ -44,32 +44,44 @@ namespace Chason.PerformanceTests
 
             stopwatch.Reset();
             stopwatch.Start();
-            PerfChason(seed, count);
+            SerializeChason(seed, count);
             stopwatch.Stop();
-            Console.WriteLine("Chason: {0}", stopwatch.ElapsedMilliseconds);
+            Console.WriteLine("SerializeChason: {0}", stopwatch.ElapsedMilliseconds);
 
             stopwatch.Reset();
             stopwatch.Start();
-            PerfDataContract(seed, count);
+            SerializeDataContract(seed, count);
             stopwatch.Stop();
 
-            Console.WriteLine("DataContractJson: {0}", stopwatch.ElapsedMilliseconds);
+            Console.WriteLine("SerializeDataContractJson: {0}", stopwatch.ElapsedMilliseconds);
             stopwatch.Reset();
             stopwatch.Start();
-            PerfServiceStack(seed, count);
+            SerializeServiceStack(seed, count);
             stopwatch.Stop();
-            Console.WriteLine("ServiceStack: {0}", stopwatch.ElapsedMilliseconds);
+            Console.WriteLine("SerializeServiceStack: {0}", stopwatch.ElapsedMilliseconds);
 
             stopwatch.Reset();
             stopwatch.Start();
-            PerfFastJson(seed, count);
+            SerializeFastJson(seed, count);
             stopwatch.Stop();
-            Console.WriteLine("FastJSON: {0}", stopwatch.ElapsedMilliseconds);
+            Console.WriteLine("SerializeFastJSON: {0}", stopwatch.ElapsedMilliseconds);
+
+            stopwatch.Reset();
+            stopwatch.Start();
+            ParseChason(seed, count);
+            stopwatch.Stop();
+            Console.WriteLine("ParseChason: {0}", stopwatch.ElapsedMilliseconds);
+
+            stopwatch.Reset();
+            stopwatch.Start();
+            ParseFastJson(seed, count);
+            stopwatch.Stop();
+            Console.WriteLine("ParseFastJSON: {0}", stopwatch.ElapsedMilliseconds);
 
             Console.ReadKey();
         }
 
-        private static void PerfServiceStack(long seed, int count)
+        private static void SerializeServiceStack(long seed, int count)
         {
             var s2 = new ServiceStack.Text.JsonSerializer<TestDataContract>();
             var m = new MemoryStream(8000);
@@ -82,8 +94,26 @@ namespace Chason.PerformanceTests
             }
         }
 
+        private static void ParseFastJson(long seed, int count)
+        {
+            for (int i = 0; i < 100000; i++)
+            {
+                var s2 = new fastJSON.JsonParser(TestJson);
+                var x = s2.Decode();
+            }
+        }
 
-        private static void PerfFastJson(long seed, int count)
+        private static void ParseChason(long seed, int count)
+        {
+            for (int i = 0; i < 100000; i++)
+            {
+                var s2 = new Chason.JsonParser(new StringReader(TestJson));
+                var x = s2.Parse();
+            }
+        }
+
+
+        private static void SerializeFastJson(long seed, int count)
         {
             var s2 = new fastJSON.JSONSerializer(false, false, false, true, false);
             var m = new MemoryStream(8000);
@@ -98,7 +128,9 @@ namespace Chason.PerformanceTests
 
         private static readonly TestDataContract testData = new TestDataContract { FirstString = "First \"String\" ", SecondString = "Second \\ 'String' ", FirstInt = 1 };
 
-        private static void PerfDataContract(long seed, int count)
+        private static readonly string TestJson = "{\"FirstString\":\"First \\\"String\\\" \"}";
+
+        private static void SerializeDataContract(long seed, int count)
         {
             var s2 = new DataContractJsonSerializer(typeof(TestDataContract));
             var m = new MemoryStream(8000);
@@ -124,7 +156,7 @@ namespace Chason.PerformanceTests
             };
         }
 
-        private static void PerfChason(long seed, int count)
+        private static void SerializeChason(long seed, int count)
         {
             var s1 = new ChasonSerializer<TestDataContract>();
             var m = new MemoryStream(8000);

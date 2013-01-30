@@ -14,7 +14,7 @@ namespace Chason
     /// JSON uses Arrays and Objects. These correspond here to the datatypes ArrayList and Hashtable.
     /// All numbers are parsed to doubles.
     /// </summary>
-    internal class JsonParser
+    public class JsonParser
     {
         enum Token
         {
@@ -32,38 +32,81 @@ namespace Chason
             Null
         }
 
-        readonly char[] json;
+        private readonly char[] json;
+        
         readonly StringBuilder s = new StringBuilder();
-        Token lookAheadToken = Token.None;
+
+        private Token lookAheadToken = Token.None;
+
+        private const int KeepAhead = 5;
+
+        private char lastChar = '\0';
+
         int index;
 
-
-        private readonly StreamReader reader;
-
-        private int windowIndex;
+        private readonly TextReader reader;
 
         private int bufferSize;
 
-        public JsonParser(StreamReader reader)
+        private bool endOfStream;
+
+        public JsonParser(TextReader reader) : this(reader, 2000)
         {
-            this.windowIndex = 0;
+        }
+
+        public JsonParser(TextReader reader, int bufferSize)
+        {
+            if (bufferSize <= KeepAhead)
+            {
+                throw new ArgumentOutOfRangeException("bufferSize", "Buffer size must be greater than " + KeepAhead + " characters");
+            }
 
             this.reader = reader;
-            this.json = new char[8000];
+            this.json = new char[bufferSize];
             this.FillBuffer();
         }
 
-        public object Decode()
+        public object Parse()
         {
             return ParseValue();
         }
 
+        
         private bool FillBuffer()
         {
-            this.bufferSize = this.reader.Read(this.json, this.windowIndex, this.json.Length);
+            if (this.endOfStream)
+            {
+                return false;
+            }
+
+            if (this.bufferSize != 0)
+            {
+                for (int i = 0; i < KeepAhead; i++)
+                {
+                    this.json[i] = this.json[this.bufferSize + i];
+                }
+
+                var readCount = this.json.Length - KeepAhead;
+                this.bufferSize = this.reader.Read(this.json, KeepAhead, readCount);
+                if (this.bufferSize < readCount)
+                {
+                    this.endOfStream = true;
+                }
+            }
+            else
+            {
+                var readCount = this.json.Length - this.bufferSize;
+                this.bufferSize = this.reader.Read(this.json, 0, readCount);
+                if (this.bufferSize < readCount)
+                {
+                    this.endOfStream = true;
+                }
+            }
+
             if (this.bufferSize != -1)
             {
-                this.windowIndex += this.bufferSize;
+                this.bufferSize = this.bufferSize > KeepAhead ? this.bufferSize - KeepAhead : this.bufferSize;
+                this.index = 0;
                 return true;
             }
 
@@ -120,7 +163,6 @@ namespace Chason
             {
                 switch (LookAhead())
                 {
-
                     case Token.Comma:
                         ConsumeToken(); // ,
                         break;
@@ -170,6 +212,54 @@ namespace Chason
             throw new Exception("Unrecognized token at index" + index);
         }
 
+        public char[] Buffer
+        {
+            get
+            {
+                var b = new char[this.bufferSize + KeepAhead];
+                Array.ConstrainedCopy(this.json, 0, b, 0, this.bufferSize + KeepAhead);
+                return b;
+            }
+        }
+
+        public bool MoveNext()
+        {
+            this.lastChar = this.json[this.index];
+            this.index++;
+            if (this.index >= this.bufferSize)
+            {
+                if (!this.FillBuffer())
+                {
+                    return this.index < this.bufferSize + KeepAhead;
+                }
+            }
+
+            return true;
+        }
+
+        public bool MoveNext(int offset)
+        {
+            if (offset > KeepAhead)
+            {
+                throw new ArgumentOutOfRangeException("offset", "Offset cannot be further than the number of characters we read ahead.");
+            }
+
+            this.lastChar = this.json[this.index];
+            this.index += offset;
+            if (this.index >= this.bufferSize)
+            {
+                if (!this.FillBuffer())
+                {
+                    this.index += offset;
+                    return this.index < this.bufferSize + KeepAhead;
+                }
+
+                return true;
+            }
+
+            return true;
+        }
+
         private string ParseString()
         {
             ConsumeToken(); // "
@@ -177,27 +267,35 @@ namespace Chason
             s.Length = 0;
 
             int runIndex = -1;
-
-            while (index < json.Length)
+            while (true)
             {
-                var c = json[index++];
+                var c = json[index];
+                if (!this.MoveNext())
+                {
+                    break;
+                }
 
                 if (c == '"')
                 {
                     if (runIndex != -1)
                     {
                         if (s.Length == 0)
+                        {
                             return new string(json, runIndex, index - runIndex - 1);
+                        }
 
                         s.Append(json, runIndex, index - runIndex - 1);
                     }
+
                     return s.ToString();
                 }
 
                 if (c != '\\')
                 {
                     if (runIndex == -1)
+                    {
                         runIndex = index - 1;
+                    }
 
                     continue;
                 }
@@ -263,15 +361,15 @@ namespace Chason
             throw new Exception("Unexpectedly reached end of string");
         }
 
-        private uint ParseSingleChar(char c1, uint multipliyer)
+        private uint ParseSingleChar(char c1, uint multiplyer)
         {
             uint p1 = 0;
             if (c1 >= '0' && c1 <= '9')
-                p1 = (uint)(c1 - '0') * multipliyer;
+                p1 = (uint)(c1 - '0') * multiplyer;
             else if (c1 >= 'A' && c1 <= 'F')
-                p1 = (uint)((c1 - 'A') + 10) * multipliyer;
+                p1 = (uint)((c1 - 'A') + 10) * multiplyer;
             else if (c1 >= 'a' && c1 <= 'f')
-                p1 = (uint)((c1 - 'a') + 10) * multipliyer;
+                p1 = (uint)((c1 - 'a') + 10) * multiplyer;
             return p1;
         }
 
@@ -288,24 +386,29 @@ namespace Chason
         private string ParseNumber()
         {
             ConsumeToken();
+            var sb = new StringBuilder(10);
 
-            // Need to start back one place because the first digit is also a token and would have been consumed
-            var startIndex = index - 1;
+            // Need to get the last char because the first digit is also a token and would have been consumed
+            sb.Append(this.lastChar);
 
             do
             {
                 var c = json[index];
-
                 if ((c >= '0' && c <= '9') || c == '.' || c == '-' || c == '+' || c == 'e' || c == 'E')
                 {
-                    if (++index == json.Length) throw new Exception("Unexpected end of string whilst parsing number");
+                    sb.Append(c);
+                    if (!this.MoveNext())
+                    {
+                        throw new Exception("Unexpected end of string whilst parsing number");
+                    }
+
                     continue;
                 }
 
                 break;
             } while (true);
 
-            return new string(json, startIndex, index - startIndex);
+            return sb.ToString();
         }
 
         private Token LookAhead()
@@ -337,24 +440,13 @@ namespace Chason
             do
             {
                 c = json[index];
-
                 if (c > ' ') break;
-                if (c != ' ' && c != '\t' && c != '\n' && c != '\r') break;
+                if (c != ' ' && c != '\n' && c != '\r' && c != '\t') break;
 
-            } while (++index < this.bufferSize);
+            } while (this.MoveNext());
 
-            if (index == this.bufferSize)
-            {
-                throw new Exception("Reached end of string unexpectedly");
-            }
-
-            c = json[index];
-
-            index++;
-
-            //if (c >= '0' && c <= '9')
-            //    return Token.Number;
-
+            this.MoveNext();
+            
             switch (c)
             {
                 case '{':
@@ -395,7 +487,7 @@ namespace Chason
 
                 case 'f':
                     if (json.Length - index >= 4 &&
-                        json[index + 0] == 'a' &&
+                        json[index] == 'a' &&
                         json[index + 1] == 'l' &&
                         json[index + 2] == 's' &&
                         json[index + 3] == 'e')
@@ -407,7 +499,7 @@ namespace Chason
 
                 case 't':
                     if (json.Length - index >= 3 &&
-                        json[index + 0] == 'r' &&
+                        json[index] == 'r' &&
                         json[index + 1] == 'u' &&
                         json[index + 2] == 'e')
                     {
@@ -418,7 +510,7 @@ namespace Chason
 
                 case 'n':
                     if (json.Length - index >= 3 &&
-                        json[index + 0] == 'u' &&
+                        json[index] == 'u' &&
                         json[index + 1] == 'l' &&
                         json[index + 2] == 'l')
                     {
