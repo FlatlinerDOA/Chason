@@ -58,6 +58,7 @@
   <ItemGroup>
     <Compile Include="Parsing\GivenABufferFifteenCharactersLongAndABufferSizeOfTenCharacters.cs" />
     <Compile Include="TestDataContract.cs" />
+    <Compile Include="UnitTest1.cs" />
     <Compile Include="WhenSerializingADataContractClass.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

@@ -8,12 +8,22 @@ namespace Chason.PerformanceTests
 {
     using System.Diagnostics;
     using System.IO;
+    using System.Linq.Expressions;
     using System.Runtime.Serialization;
     using System.Runtime.Serialization.Json;
     using System.Threading;
 
     class Program
     {
+        private static readonly TestDataContract testData = new TestDataContract { FirstString = "First \"String\" ", SecondString = "Second \\ 'String' ", FirstInt = 1 };
+
+        private static readonly string TestJson = "[{\"FirstString\":\"First \\\"String\\\" \",\"SecondString\":\"Second String\"},{\"FirstString\":\"First \\\"String\\\" \",\"SecondString\":\"Second String\"},{\"FirstString\":\"First \\\"String\\\" \",\"SecondString\":\"Second String\"},{\"FirstString\":\"First \\\"String\\\" \",\"SecondString\":\"Second String\"}]";
+
+        private static readonly Random RandomGenerator = new Random((int)DateTime.UtcNow.Ticks);
+
+        private const int ObjectsCount = 100000;
+
+
         static void Main(string[] args)
         {
             Stopwatch stopwatch = new Stopwatch();
@@ -27,13 +37,12 @@ namespace Chason.PerformanceTests
             Console.WriteLine("Warmup");
             for (int repeat = 0; repeat < 2; ++repeat)
             {
-                stopwatch.Reset();
-                stopwatch.Start();
-                SerializeDataContract(seed, count);
-                SerializeChason(seed, count);
-                stopwatch.Stop();
-                Console.WriteLine("Ticks: " + stopwatch.ElapsedTicks +
-                " mS: " + stopwatch.ElapsedMilliseconds);
+                TimeEach(1000,
+                 c => SerializeChason(c),
+                 c => SerializeDataContractJson(c),
+                 c => SerializeServiceStack(c),
+                 c => ParseChason(c),
+                 c => ParseFastJson(c));
             }
 
             Process.GetCurrentProcess().ProcessorAffinity = new IntPtr(2); // Uses the second Core or Processor for the Test
@@ -42,46 +51,29 @@ namespace Chason.PerformanceTests
             Thread.CurrentThread.Priority = ThreadPriority.Highest;  	// Prevents "Normal" Threads 
             // from interrupting this thread
 
-            stopwatch.Reset();
-            stopwatch.Start();
-            SerializeChason(seed, count);
-            stopwatch.Stop();
-            Console.WriteLine("SerializeChason: {0}", stopwatch.ElapsedMilliseconds);
+            TimeEach(count, 
+                c => SerializeChason(c),
+                c => SerializeDataContractJson(c), 
+                c => SerializeServiceStack(c),
+                c => ParseChason(c),
+                c => ParseFastJson(c));
 
-            stopwatch.Reset();
-            stopwatch.Start();
-            SerializeDataContract(seed, count);
-            stopwatch.Stop();
-
-            Console.WriteLine("SerializeDataContractJson: {0}", stopwatch.ElapsedMilliseconds);
-            stopwatch.Reset();
-            stopwatch.Start();
-            SerializeServiceStack(seed, count);
-            stopwatch.Stop();
-            Console.WriteLine("SerializeServiceStack: {0}", stopwatch.ElapsedMilliseconds);
-
-            stopwatch.Reset();
-            stopwatch.Start();
-            SerializeFastJson(seed, count);
-            stopwatch.Stop();
-            Console.WriteLine("SerializeFastJSON: {0}", stopwatch.ElapsedMilliseconds);
-
-            stopwatch.Reset();
-            stopwatch.Start();
-            ParseChason(seed, count);
-            stopwatch.Stop();
-            Console.WriteLine("ParseChason: {0}", stopwatch.ElapsedMilliseconds);
-
-            stopwatch.Reset();
-            stopwatch.Start();
-            ParseFastJson(seed, count);
-            stopwatch.Stop();
-            Console.WriteLine("ParseFastJSON: {0}", stopwatch.ElapsedMilliseconds);
 
             Console.ReadKey();
         }
 
-        private static void SerializeServiceStack(long seed, int count)
+        private static void TimeEach(int count, params Expression<Action<int>>[] timedCalls)
+        {
+            foreach (var timedCall in timedCalls)
+            {
+                var s = Stopwatch.StartNew();
+                timedCall.Compile()(count);
+                s.Stop();
+                Console.WriteLine("{0}: {1}", timedCall, s.ElapsedMilliseconds);
+            }
+        }
+
+        private static void SerializeServiceStack(int count)
         {
             var s2 = new ServiceStack.Text.JsonSerializer<TestDataContract>();
             var m = new MemoryStream(8000);
@@ -94,18 +86,19 @@ namespace Chason.PerformanceTests
             }
         }
 
-        private static void ParseFastJson(long seed, int count)
+        private static void ParseFastJson(int count)
         {
-            for (int i = 0; i < 100000; i++)
+            for (int i = 0; i < count; i++)
             {
-                var s2 = new fastJSON.JsonParser(TestJson);
+                var s = new StringReader(TestJson);
+                var s2 = new fastJSON.JsonParser(s.ReadToEnd());
                 var x = s2.Decode();
             }
         }
 
-        private static void ParseChason(long seed, int count)
+        private static void ParseChason(int count)
         {
-            for (int i = 0; i < 100000; i++)
+            for (int i = 0; i < count; i++)
             {
                 var s2 = new Chason.JsonParser(new StringReader(TestJson));
                 var x = s2.Parse();
@@ -113,11 +106,11 @@ namespace Chason.PerformanceTests
         }
 
 
-        private static void SerializeFastJson(long seed, int count)
+        private static void SerializeFastJson(int count)
         {
             var s2 = new fastJSON.JSONSerializer(false, false, false, true, false);
             var m = new MemoryStream(8000);
-            for (int i = 0; i < 10000; i++)
+            for (int i = 0; i < count; i++)
             {
                 var t = new StreamWriter(m);
                 t.Write(s2.ConvertToJSON(testData));
@@ -126,11 +119,8 @@ namespace Chason.PerformanceTests
             }
         }
 
-        private static readonly TestDataContract testData = new TestDataContract { FirstString = "First \"String\" ", SecondString = "Second \\ 'String' ", FirstInt = 1 };
 
-        private static readonly string TestJson = "{\"FirstString\":\"First \\\"String\\\" \"}";
-
-        private static void SerializeDataContract(long seed, int count)
+        private static void SerializeDataContractJson(int count)
         {
             var s2 = new DataContractJsonSerializer(typeof(TestDataContract));
             var m = new MemoryStream(8000);
@@ -140,10 +130,6 @@ namespace Chason.PerformanceTests
                 m.Position = 0;
             }
         }
-        
-        private static readonly Random RandomGenerator = new Random((int)DateTime.UtcNow.Ticks);
-
-        private const int ObjectsCount = 100000;
 
         private static SimpleObject GetSimpleObject(long id)
         {
@@ -156,7 +142,7 @@ namespace Chason.PerformanceTests
             };
         }
 
-        private static void SerializeChason(long seed, int count)
+        private static void SerializeChason(int count)
         {
             var s1 = new ChasonSerializer<TestDataContract>();
             var m = new MemoryStream(8000);
