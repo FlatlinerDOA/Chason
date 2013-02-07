@@ -57,13 +57,13 @@
             var parseCall = PropertyParser.GetParseMethodCall(info.PropertyType, parserParameter);
             var setPropertyCall = Expression.Call(instanceParameter, info.GetSetMethod(true), parseCall);
             this.SetExpression = setPropertyCall;
-            this.Parse = Expression.Lambda<Action<JsonParser, T>>(this.SetExpression, parserParameter, instanceParameter).Compile();
+            this.Parse = Expression.Lambda<Action<ChasonParser, T>>(this.SetExpression, parserParameter, instanceParameter).Compile();
         }
 
         //Action<JsonParser, T>
         public Expression SetExpression { get; set; }
 
-        public Action<JsonParser, T> Parse { get; set; }
+        public Action<ChasonParser, T> Parse { get; set; }
 
         public string Name { get; set; }
 

@@ -37,8 +37,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ChasonSerializer.cs" />
+    <Compile Include="ChasonSerializerSettings.cs" />
     <Compile Include="GenericJsonParser.cs" />
-    <Compile Include="JsonParser.cs" />
+    <Compile Include="ChasonParser.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="PropertyParseList.cs" />
     <Compile Include="PropertyParser.cs" />

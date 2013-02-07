@@ -23,7 +23,7 @@
         public PropertyParseList()
         {
             this.constructor = Constructor().Compile();
-            var jsonParameter = Expression.Parameter(typeof(JsonParser), "j");
+            var jsonParameter = Expression.Parameter(typeof(ChasonParser), "j");
             var instanceParameter = Expression.Parameter(typeof(T), "i");
             var members = from p in typeof(T).GetProperties(BindingFlags.FlattenHierarchy | BindingFlags.Instance | BindingFlags.Public)
                           from c in p.GetCustomAttributes(true).OfType<DataMemberAttribute>()
@@ -64,7 +64,7 @@
             return Expression.Lambda<Func<T>>(Expression.New(ctorInfo));
         }
 
-        public void Parse(JsonParser parser, T instance, string name)
+        public void Parse(ChasonParser parser, T instance, string name)
         {
             this.iterator = this.iterator ?? this.sequential.GetEnumerator();
 

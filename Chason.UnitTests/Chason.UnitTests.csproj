@@ -56,10 +56,16 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
-    <Compile Include="Parsing\GivenABufferFifteenCharactersLongAndABufferSizeOfTenCharacters.cs" />
+    <Compile Include="Deserializing\DeserializingArrays.cs" />
+    <Compile Include="Deserializing\DeserializingCollections.cs" />
+    <Compile Include="Deserializing\DeserializingDictionaries.cs" />
+    <Compile Include="Deserializing\DeserializingHashSets.cs" />
+    <Compile Include="Deserializing\DeserializingValueTypes.cs" />
+    <Compile Include="Deserializing\DeserializingNullableValueTypes.cs" />
+    <Compile Include="Deserializing\GivenASimpleJsonString.cs" />
     <Compile Include="TestDataContract.cs" />
     <Compile Include="UnitTest1.cs" />
-    <Compile Include="WhenSerializingADataContractClass.cs" />
+    <Compile Include="Serializing\WhenSerializingADataContractClass.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

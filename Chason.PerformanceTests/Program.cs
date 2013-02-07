@@ -161,7 +161,7 @@ namespace Chason.PerformanceTests
         {
             for (int i = 0; i < count; i++)
             {
-                var s2 = new Chason.JsonParser(TestJson);
+                var s2 = new Chason.ChasonParser(TestJson);
                 var x = s2.Parse<SimpleObject>();
             }
         }

@@ -20,8 +20,11 @@
     /// JSON uses Arrays and Objects. These correspond here to the datatypes ArrayList and Hashtable.
     /// All numbers are parsed to doubles.
     /// </summary>
-    public sealed class JsonParser
+    /// <remarks>Code taken from fastJSON implementation at fastjson.codeplex.com</remarks>
+    internal sealed class ChasonParser
     {
+        private readonly ChasonSerializerSettings settings;
+
         private enum Token
         {
             None = -1,           // Used to denote no Lookahead available
@@ -46,12 +49,13 @@
         
         private int index;
 
-        public JsonParser(string json)
+        public ChasonParser(string json, ChasonSerializerSettings settings)
         {
+            this.settings = settings;
             this.json = json.ToCharArray();
         }
 
-        public T Parse<T>() where T : class
+        public T Parse<T>()
         {
             if (typeof(T).IsGenericType)
             {
@@ -68,7 +72,7 @@
             return this.ParseObject<T>();
         }
 
-        private T ParseObject<T>() where T : class
+        private T ParseObject<T>()
         {
             var instanceParser = PropertyParseList<T>.Instance;
 
