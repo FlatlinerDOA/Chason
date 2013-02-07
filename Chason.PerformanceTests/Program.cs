@@ -159,10 +159,10 @@ namespace Chason.PerformanceTests
 
         private static void DeserializeChason(int count)
         {
+            var s2 = new ChasonSerializer<SimpleObject>();
             for (int i = 0; i < count; i++)
             {
-                var s2 = new Chason.ChasonParser(TestJson);
-                var x = s2.Parse<SimpleObject>();
+                var x = s2.Deserialize(TestJson);
             }
         }
 

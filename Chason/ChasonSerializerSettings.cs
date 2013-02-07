@@ -60,7 +60,7 @@
         }
 
         /// <summary>
-        /// Gets the list of known polymorphic types
+        /// Gets the list of known polymorphic types that can be deserialized to.
         /// </summary>
         public IList<Type> KnownTypes { get; private set; }
 
@@ -73,6 +73,7 @@
             {
                 return this.textEncoding;
             }
+
             set
             {
                 this.EnsureNotReadOnly();
@@ -81,7 +82,7 @@
         }
 
         /// <summary>
-        /// Gets or sets teh culture info to use when parsing and formatting culture specific values such as dates (defaults to InvariantCulture)
+        /// Gets or sets the culture info to use when parsing and formatting culture specific values such as dates (defaults to InvariantCulture)
         /// </summary>
         public CultureInfo CultureInfo
         {
@@ -89,6 +90,7 @@
             {
                 return this.cultureInfo;
             }
+
             set
             {
                 this.EnsureNotReadOnly();
@@ -105,6 +107,7 @@
             {
                 return this.dateTimeFormatString;
             }
+
             set
             {
                 this.EnsureNotReadOnly();

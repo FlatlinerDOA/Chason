@@ -1,10 +1,6 @@
 ﻿
-namespace Chason.UnitTests.Parsing
+namespace Chason.UnitTests.Deserializing
 {
-    using System;
-    using System.Collections.Generic;
-    using System.IO;
-
     using FluentAssertions;
 
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -12,15 +8,15 @@ namespace Chason.UnitTests.Parsing
     [TestClass]
     public sealed class GivenASimpleJsonString
     {
-        private ChasonParser parser;
+        private ChasonSerializer<TestDataContract> parser;
 
         private TestDataContract result;
 
         [TestInitialize]
         public void InitializeTest()
         {
-            this.parser = new ChasonParser(@"{""FirstString"":""First \""String\"" "",""FirstInt"":34}");
-            this.result = this.parser.Parse<TestDataContract>();
+            this.parser = new ChasonSerializer<TestDataContract>();
+            this.result = this.parser.Deserialize(@"{""FirstString"":""First \""String\"" "",""FirstInt"":34}");
         }
 
         [TestMethod]
