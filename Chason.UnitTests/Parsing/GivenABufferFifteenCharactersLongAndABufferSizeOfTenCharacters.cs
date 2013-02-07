@@ -8,7 +8,7 @@ namespace Chason.UnitTests.Parsing
     using FluentAssertions;
 
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-
+    /*
     [TestClass]
     public sealed class GivenABufferFifteenCharactersLongAndABufferSizeOfTenCharacters
     {
@@ -102,14 +102,38 @@ namespace Chason.UnitTests.Parsing
             d["A"].Should().Be("1234567890");
         }
     }
+    */
 
+    [TestClass]
     public sealed class GivenAJsonString
     {
-        public void WhenParsing_ThenNoExceptionIsThrown()
+        private JsonParser parser;
+
+        private TestDataContract result;
+
+        [TestInitialize]
+        public void InitializeTest()
         {
-            var p = new JsonParser(new StringReader("{\"FirstString\":\"First \\\"String\\\" \"}"));
-            var d= (Dictionary<string, object>)p.Parse();
-            d.Should().NotBeNull();
+            this.parser = new JsonParser(@"{""FirstString"":""First \""String\"" "",""FirstInt"":34}");
+            this.result = this.parser.Parse<TestDataContract>();
+        }
+
+        [TestMethod]
+        public void ThenTheResultIsNotNull()
+        {
+            this.result.Should().NotBeNull();
+        }
+
+        [TestMethod]
+        public void ThenTheResultFirstStringIsLoaded()
+        {
+            this.result.FirstString.Should().Be("First \"String\" ");
+        }
+
+        [TestMethod]
+        public void ThenTheResultFirstIntIsLoaded()
+        {
+            this.result.FirstInt.Should().Be(34);
         }
     }
 }

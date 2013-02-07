@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 namespace Chason.PerformanceTests
 {
+    using System.Collections;
     using System.Diagnostics;
     using System.IO;
     using System.Linq.Expressions;
@@ -15,9 +16,21 @@ namespace Chason.PerformanceTests
 
     class Program
     {
-        private static readonly TestDataContract testData = new TestDataContract { FirstString = "First \"String\" ", SecondString = "Second \\ 'String' ", FirstInt = 1 };
+        ////private static readonly TestDataContract testData = new TestDataContract { FirstString = "First \"String\" ", SecondString = "Second \\ 'String' ", FirstInt = 1 };
 
-        private static readonly string TestJson = "[{\"FirstString\":\"First \\\"String\\\" \",\"SecondString\":\"Second String\"},{\"FirstString\":\"First \\\"String\\\" \",\"SecondString\":\"Second String\"},{\"FirstString\":\"First \\\"String\\\" \",\"SecondString\":\"Second String\"},{\"FirstString\":\"First \\\"String\\\" \",\"SecondString\":\"Second String\"}]";
+        private static readonly SimpleObject testData = new SimpleObject
+                                                            {
+                                                                Id = 10,
+                                                                Name = "Joe Bloggs",
+                                                                Address = "1 Crescent Crt\nMelbourne City",
+                                                                Scores = new[] { 10, 20, 30, 40, 50 }
+                                                            };
+        ////private static readonly string TestJson = "[{\"FirstString\":\"First \\\"String\\\" \",\"SecondString\":\"Second String\"},{\"FirstString\":\"First \\\"String\\\" \",\"SecondString\":\"Second String\"},{\"FirstString\":\"First \\\"String\\\" \",\"SecondString\":\"Second String\"},{\"FirstString\":\"First \\\"String\\\" \",\"SecondString\":\"Second String\"}]";
+
+        ////private static readonly string TestJson = "{\"FirstString\":\"First \\\"String\\\" \",\"SecondString\":\"Second String\"}";
+
+        private static readonly string TestJson = "{\"Id\":10,\"Name\":\"Joe Bloggs\",\"Address\":\"1 Crescent Crt\\nMelbourne City\",\"Scores\":[10,20,30,40,50]}";
+        //SimpleObject
 
         private static readonly Random RandomGenerator = new Random((int)DateTime.UtcNow.Ticks);
 
@@ -38,12 +51,18 @@ namespace Chason.PerformanceTests
             for (int repeat = 0; repeat < 2; ++repeat)
             {
                 TimeEach(1000,
-                 c => SerializeChason(c),
-                 c => SerializeDataContractJson(c),
-                 c => SerializeServiceStack(c),
-                 c => ParseChason(c),
-                 c => ParseFastJson(c));
+                c => SerializeChason(c),
+                c => SerializeDataContractJson(c),
+                c => SerializeServiceStack(c),
+                c => SerializeFastJson(c),
+                c => DeserializeChason(c),
+                c => DeserializeFastJson(c),
+                c => DeserializeJsonNet(c),
+                c => DeserializeServiceStack(c));
             }
+
+            Console.WriteLine("Warmup complete");
+            Console.WriteLine();
 
             Process.GetCurrentProcess().ProcessorAffinity = new IntPtr(2); // Uses the second Core or Processor for the Test
             Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.High;  	// Prevents "Normal" processes 
@@ -51,14 +70,18 @@ namespace Chason.PerformanceTests
             Thread.CurrentThread.Priority = ThreadPriority.Highest;  	// Prevents "Normal" Threads 
             // from interrupting this thread
 
+            Console.WriteLine("Starting PerfTests");
             TimeEach(count, 
                 c => SerializeChason(c),
                 c => SerializeDataContractJson(c), 
                 c => SerializeServiceStack(c),
-                c => ParseChason(c),
-                c => ParseFastJson(c));
+                c => SerializeFastJson(c / 100),
+                c => DeserializeChason(c),
+                c => DeserializeFastJson(c),
+                c => DeserializeJsonNet(c),
+                c => DeserializeServiceStack(c));
 
-
+            Console.WriteLine("Done");
             Console.ReadKey();
         }
 
@@ -66,16 +89,17 @@ namespace Chason.PerformanceTests
         {
             foreach (var timedCall in timedCalls)
             {
+                var a = timedCall.Compile();
                 var s = Stopwatch.StartNew();
-                timedCall.Compile()(count);
+                a(count);
                 s.Stop();
-                Console.WriteLine("{0}: {1}", timedCall, s.ElapsedMilliseconds);
+                Console.WriteLine(" {0}    {1}    ({2:0.0}/sec)", timedCall.ToString().Substring("c => ".Length).Replace("(c", "(" + count), s.ElapsedMilliseconds, count / s.Elapsed.TotalSeconds);
             }
         }
 
         private static void SerializeServiceStack(int count)
         {
-            var s2 = new ServiceStack.Text.JsonSerializer<TestDataContract>();
+            var s2 = new ServiceStack.Text.JsonSerializer<SimpleObject>();
             var m = new MemoryStream(8000);
             for (int i = 0; i < count; i++)
             {
@@ -86,22 +110,44 @@ namespace Chason.PerformanceTests
             }
         }
 
-        private static void ParseFastJson(int count)
+        private static void DeserializeFastJson(int count)
         {
             for (int i = 0; i < count; i++)
             {
-                var s = new StringReader(TestJson);
-                var s2 = new fastJSON.JsonParser(s.ReadToEnd());
-                var x = s2.Decode();
+                var s2 = new fastJSON.JsonParser(TestJson);
+                var x = (Dictionary<string, object>)s2.Decode();
+                var s = new SimpleObject
+                            {
+                                Id = int.Parse((string)x["Id"]),
+                                Name = (string)x["Name"],
+                                Address = (string)x["Address"],
+                                Scores = ((ArrayList)x["Scores"]).OfType<string>().Select(int.Parse).ToArray()
+                            };
             }
         }
 
-        private static void ParseChason(int count)
+        private static void DeserializeChason(int count)
         {
             for (int i = 0; i < count; i++)
             {
-                var s2 = new Chason.JsonParser(new StringReader(TestJson));
-                var x = s2.Parse();
+                var s2 = new Chason.JsonParser(TestJson);
+                var x = s2.Parse<SimpleObject>();
+            }
+        }
+
+        private static void DeserializeJsonNet(int count)
+        {
+            for (int i = 0; i < count; i++)
+            {
+                var s2 = Newtonsoft.Json.JsonConvert.DeserializeObject<SimpleObject>(TestJson);
+            }
+        }
+
+        private static void DeserializeServiceStack(int count)
+        {
+            for (int i = 0; i < count; i++)
+            {
+                var s2 = ServiceStack.Text.Json.JsonReader<SimpleObject>.Parse(TestJson);
             }
         }
 
@@ -122,7 +168,7 @@ namespace Chason.PerformanceTests
 
         private static void SerializeDataContractJson(int count)
         {
-            var s2 = new DataContractJsonSerializer(typeof(TestDataContract));
+            var s2 = new DataContractJsonSerializer(typeof(SimpleObject));
             var m = new MemoryStream(8000);
             for (int i = 0; i < count; i++)
             {
@@ -144,7 +190,7 @@ namespace Chason.PerformanceTests
 
         private static void SerializeChason(int count)
         {
-            var s1 = new ChasonSerializer<TestDataContract>();
+            var s1 = new ChasonSerializer<SimpleObject>();
             var m = new MemoryStream(8000);
             for (int i = 0; i < count; i++)
             {

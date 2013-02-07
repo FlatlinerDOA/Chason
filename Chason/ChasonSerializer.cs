@@ -68,7 +68,7 @@
             var members = from p in typeof(T).GetProperties(BindingFlags.FlattenHierarchy | BindingFlags.Instance | BindingFlags.Public)
                           from c in p.GetCustomAttributes(true).OfType<DataMemberAttribute>()
                           where c != null
-                          orderby c.Name ?? p.Name, c.Order
+                          orderby c.Order, c.Name ?? p.Name 
                           select new { Property = p, Contract = c };
 
             bool first = true;
