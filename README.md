@@ -6,10 +6,11 @@ Clearly there was room for improvement. The goal of Chason (pronounced 'chase on
 the best of the best JSON serializers out there.
 
 Goals for the project are:
-- Fast (as fast as .NET will go)
+- Fast! (as fast as .NET will let us go)
 - Pluggable formatters (support for your own value types converted to and from JSON)
 - Full polymorphic support with internal to external type mapping.
-
+- Optimize for strongly typed data contracts with an explicitly specified member order (to improve perf even more)
+- Portable Library support (initially only .NET 4.5 and WinRT)
 
 Initial Performance Results 
 ---------------------------
