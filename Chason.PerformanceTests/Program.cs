@@ -51,14 +51,16 @@ namespace Chason.PerformanceTests
             for (int repeat = 0; repeat < 2; ++repeat)
             {
                 TimeEach(1000,
-                c => SerializeChason(c),
-                c => SerializeDataContractJson(c),
-                c => SerializeServiceStack(c),
-                c => SerializeFastJson(c),
-                c => DeserializeChason(c),
-                c => DeserializeFastJson(c),
-                c => DeserializeJsonNet(c),
-                c => DeserializeServiceStack(c));
+                    c => SerializeChason(c),
+                    c => SerializeServiceStack(c),
+                    c => SerializeJsonNet(c),
+                    c => SerializeFastJson(c / 100),
+                    c => SerializeDataContractJson(c),
+                    c => DeserializeChason(c),
+                    c => DeserializeServiceStack(c),
+                    c => DeserializeJsonNet(c),
+                    c => DeserializeFastJson(c),
+                    c => DeserializeDataContractJson(c));
             }
 
             Console.WriteLine("Warmup complete");
@@ -73,16 +75,45 @@ namespace Chason.PerformanceTests
             Console.WriteLine("Starting PerfTests");
             TimeEach(count, 
                 c => SerializeChason(c),
-                c => SerializeDataContractJson(c), 
                 c => SerializeServiceStack(c),
+                c => SerializeJsonNet(c),
                 c => SerializeFastJson(c / 100),
+                c => SerializeDataContractJson(c), 
                 c => DeserializeChason(c),
-                c => DeserializeFastJson(c),
+                c => DeserializeServiceStack(c),
                 c => DeserializeJsonNet(c),
-                c => DeserializeServiceStack(c));
+                c => DeserializeFastJson(c),
+                c => DeserializeDataContractJson(c));
 
             Console.WriteLine("Done");
             Console.ReadKey();
+        }
+
+        private static void DeserializeDataContractJson(int count)
+        {
+            var s2 = new DataContractJsonSerializer(typeof(SimpleObject));
+            var m = new MemoryStream(8000);
+            var b = Encoding.UTF8.GetBytes(TestJson);
+            m.Write(b, 0, b.Length);
+            m.Position = 0;
+            for (int i = 0; i < count; i++)
+            {
+                var s = (SimpleObject)s2.ReadObject(m);
+                m.Position = 0;
+            }
+        }
+
+        private static void SerializeJsonNet(int count)
+        {
+            var s2 = new Newtonsoft.Json.JsonSerializer();
+            var m = new MemoryStream(8000);
+            for (int i = 0; i < count; i++)
+            {
+                var t = new StreamWriter(m);
+                s2.Serialize(t, testData);
+                t.Flush();
+                m.Position = 0;
+            }
         }
 
         private static void TimeEach(int count, params Expression<Action<int>>[] timedCalls)
