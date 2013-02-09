@@ -1,60 +1,176 @@
-﻿namespace Chason
+﻿// --------------------------------------------------------------------------------------------------------------------
+// <copyright file="ChasonParser.cs" company="">
+//   
+// </copyright>
+// <summary>
+//   
+// </summary>
+// --------------------------------------------------------------------------------------------------------------------
+
+namespace Chason
 {
     using System;
     using System.Collections.Generic;
     using System.Linq.Expressions;
+    using System.Reflection;
     using System.Runtime.Serialization;
     using System.Text;
 
     /// <summary>
-    /// This class encodes and decodes JSON strings.
+    /// This class decodes JSON strings.
     /// Spec. details, see http://www.json.org/
-    /// 
-    /// JSON uses Arrays and Objects. These correspond here to the datatypes ArrayList and Hashtable.
-    /// All numbers are parsed to doubles.
-    /// </summary>
-    /// <summary>
-    /// This class encodes and decodes JSON strings.
-    /// Spec. details, see http://www.json.org/
-    /// 
-    /// JSON uses Arrays and Objects. These correspond here to the datatypes ArrayList and Hashtable.
-    /// All numbers are parsed to doubles.
     /// </summary>
     /// <remarks>Code taken from fastJSON implementation at fastjson.codeplex.com</remarks>
     internal sealed class ChasonParser
     {
+        #region Static Fields
+
+        /// <summary>
+        /// </summary>
+        internal static readonly Dictionary<Type, string> ListParseMethods = new Dictionary<Type, string> 
+        {
+            { typeof(IList<string>), "ParseStringList" }, 
+            { typeof(IList<int>), "ParseInt32List" }, 
+            { typeof(IList<long>), "ParseInt64List" }, 
+            { typeof(IList<decimal>), "ParseDecimalList" }
+        };
+
+        /// <summary>
+        /// </summary>
+        internal static readonly Dictionary<Type, MethodInfo> TypeParseMethods = new Dictionary<Type, MethodInfo> 
+        {
+            { typeof(string), typeof(ChasonParser).GetMethod("ParseString") }, 
+            { typeof(string[]), typeof(ChasonParser).GetMethod("ParseStringArray") }, 
+            { typeof(int), typeof(ChasonParser).GetMethod("ParseInt32") }, 
+            { typeof(int[]), typeof(ChasonParser).GetMethod("ParseInt32Array") }, 
+            { typeof(long), typeof(ChasonParser).GetMethod("ParseInt64") }, 
+            { typeof(long[]), typeof(ChasonParser).GetMethod("ParseInt64Array") }, 
+            { typeof(decimal), typeof(ChasonParser).GetMethod("ParseDecimal") }, 
+            { typeof(decimal[]), typeof(ChasonParser).GetMethod("ParseDecimalArray") }, 
+            { typeof(uint), typeof(ChasonParser).GetMethod("ParseUInt32") }, 
+            { typeof(uint?), typeof(ChasonParser).GetMethod("ParseUInt64") }
+        };
+
+        #endregion
+
+        #region Fields
+
+        /// <summary>
+        /// </summary>
+        private readonly char[] json;
+
+        /// <summary>
+        /// </summary>
+        private readonly StringBuilder s = new StringBuilder();
+
+        /// <summary>
+        /// </summary>
         private readonly ChasonSerializerSettings settings;
 
-        private enum Token
-        {
-            None = -1,           // Used to denote no Lookahead available
-            CurlyOpen,
-            CurlyClose,
-            SquaredOpen,
-            SquaredClose,
-            Colon,
-            Comma,
-            String,
-            Number,
-            True,
-            False,
-            Null
-        }
-
-        private readonly char[] json;
-        
-        private readonly StringBuilder s = new StringBuilder();
-        
-        private Token lookAheadToken = Token.None;
-        
+        /// <summary>
+        /// </summary>
         private int index;
 
+        /// <summary>
+        /// </summary>
+        private Token lookAheadToken = Token.None;
+
+        #endregion
+
+        #region Constructors and Destructors
+
+        /// <summary>
+        /// </summary>
+        /// <param name="json">
+        /// </param>
+        /// <param name="settings">
+        /// </param>
         public ChasonParser(string json, ChasonSerializerSettings settings)
         {
             this.settings = settings;
             this.json = json.ToCharArray();
         }
 
+        #endregion
+
+        #region Enums
+
+        /// <summary>
+        /// Represents the type of token being parsed
+        /// </summary>
+        private enum Token
+        {
+            /// <summary>
+            /// Used to denote no Lookahead available
+            /// </summary>
+            None = -1,
+
+            /// <summary>
+            /// A curly open brace for the start of an object
+            /// </summary>
+            CurlyOpen, 
+
+            /// <summary>
+            /// A curly close brace for the end of an object
+            /// </summary>
+            CurlyClose, 
+
+            /// <summary>
+            /// A square open bracket for the start of an array
+            /// </summary>
+            SquaredOpen, 
+
+            /// <summary>
+            /// A square close bracket for the end of an array
+            /// </summary>
+            SquaredClose, 
+
+            /// <summary>
+            /// A colon between the property name and it's assigned value
+            /// </summary>
+            Colon, 
+
+            /// <summary>
+            /// The separator between array elements and object properties
+            /// </summary>
+            Comma, 
+
+            /// <summary>
+            /// A " symbol
+            /// </summary>
+            String, 
+
+            /// <summary>
+            /// A numeric digit or + or -
+            /// </summary>
+            Number, 
+
+            /// <summary>
+            /// The constant 'true'
+            /// </summary>
+            True, 
+
+            /// <summary>
+            /// The constant 'false'
+            /// </summary>
+            False, 
+
+            /// <summary>
+            /// The constant 'null'
+            /// </summary>
+            Null
+        }
+
+        #endregion
+
+        #region Public Methods and Operators
+
+        /// <summary>
+        /// </summary>
+        /// <typeparam name="T">
+        /// </typeparam>
+        /// <returns>
+        /// </returns>
         public T Parse<T>()
         {
             if (typeof(T).IsGenericType)
@@ -72,6 +188,358 @@
             return this.ParseObject<T>();
         }
 
+        #endregion
+
+        #region Methods
+
+        /// <summary>
+        /// </summary>
+        /// <param name="type">
+        /// </param>
+        /// <param name="parserParameter">
+        /// </param>
+        /// <returns>
+        /// </returns>
+        internal static MethodCallExpression GetParseMethodCall(Type type, ParameterExpression parserParameter)
+        {
+            if (Nullable.GetUnderlyingType(type) != null)
+            {
+                return Expression.Call(parserParameter, "ParseNullable", new[] { type });
+            }
+
+            if (TypeParseMethods.ContainsKey(type))
+            {
+                return Expression.Call(parserParameter, TypeParseMethods[type]);
+            }
+
+            if (type.IsGenericType)
+            {
+                var generic = type.GetGenericTypeDefinition();
+                if (typeof(IList<>).IsAssignableFrom(generic))
+                {
+                    return Expression.Call(parserParameter, "ParseList", new[] { type });
+                }
+            }
+
+            return Expression.Call(parserParameter, "ParseObject", new[] { type });
+        }
+
+        /// <summary>
+        /// </summary>
+        /// <param name="parse">
+        /// </param>
+        /// <typeparam name="T">
+        /// </typeparam>
+        /// <returns>
+        /// </returns>
+        internal T[] ParseArray<T>(Func<T> parse)
+        {
+            return this.ParseList<List<T>, T>(parse).ToArray();
+        }
+
+        /// <summary>
+        /// </summary>
+        /// <returns>
+        /// </returns>
+        internal decimal ParseDecimal()
+        {
+            return decimal.Parse(this.ParseNumber());
+        }
+
+        /// <summary>
+        /// </summary>
+        /// <returns>
+        /// </returns>
+        internal decimal[] ParseDecimalArray()
+        {
+            return this.ParseArray(this.ParseDecimal);
+        }
+
+        /// <summary>
+        /// </summary>
+        /// <returns>
+        /// </returns>
+        internal int ParseInt32()
+        {
+            return int.Parse(this.ParseNumber());
+        }
+
+        /// <summary>
+        /// </summary>
+        /// <returns>
+        /// </returns>
+        internal int[] ParseInt32Array()
+        {
+            return this.ParseArray(this.ParseInt32);
+        }
+
+        /// <summary>
+        /// </summary>
+        /// <returns>
+        /// </returns>
+        internal long ParseInt64()
+        {
+            return long.Parse(this.ParseNumber());
+        }
+
+        /// <summary>
+        /// </summary>
+        /// <returns>
+        /// </returns>
+        internal long[] ParseInt64Array()
+        {
+            return this.ParseArray(this.ParseInt64);
+        }
+
+        /// <summary>
+        /// </summary>
+        /// <param name="parse">
+        /// </param>
+        /// <typeparam name="TList">
+        /// </typeparam>
+        /// <typeparam name="TItem">
+        /// </typeparam>
+        /// <returns>
+        /// </returns>
+        internal TList ParseList<TList, TItem>(Func<TItem> parse) where TList : IList<TItem>
+        {
+            var array = PropertyParseList<TList>.Instance.New();
+            this.ConsumeToken(); // [
+
+            while (true)
+            {
+                switch (this.LookAhead())
+                {
+                    case Token.Comma:
+                        this.ConsumeToken();
+                        break;
+
+                    case Token.SquaredClose:
+                        this.ConsumeToken();
+                        return array;
+
+                    default:
+                        array.Add(parse());
+                        break;
+                }
+            }
+        }
+
+        /// <summary>
+        /// </summary>
+        /// <param name="tryParseMethod">
+        /// </param>
+        /// <typeparam name="T">
+        /// </typeparam>
+        /// <returns>
+        /// </returns>
+        internal T? ParseNullable<T>(TryParseDelegate<T> tryParseMethod) where T : struct
+        {
+            var s = this.ParseString();
+            if (s == null)
+            {
+                return null;
+            }
+
+            T output;
+            if (tryParseMethod(s, out output))
+            {
+                return output;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// </summary>
+        /// <returns>
+        /// </returns>
+        internal string[] ParseStringArray()
+        {
+            return this.ParseArray(this.ParseString);
+        }
+
+        /// <summary>
+        /// </summary>
+        private void ConsumeToken()
+        {
+            this.lookAheadToken = Token.None;
+        }
+
+        /// <summary>
+        /// </summary>
+        /// <returns>
+        /// </returns>
+        private Token LookAhead()
+        {
+            if (this.lookAheadToken != Token.None)
+            {
+                return this.lookAheadToken;
+            }
+
+            return this.lookAheadToken = this.NextTokenCore();
+        }
+
+        /// <summary>
+        /// </summary>
+        /// <returns>
+        /// </returns>
+        private Token NextToken()
+        {
+            var result = this.lookAheadToken != Token.None ? this.lookAheadToken : this.NextTokenCore();
+            this.lookAheadToken = Token.None;
+            return result;
+        }
+
+        /// <summary>
+        /// </summary>
+        /// <returns>
+        /// </returns>
+        /// <exception cref="SerializationException">
+        /// </exception>
+        private Token NextTokenCore()
+        {
+            char c;
+
+            // Skip past whitespace
+            do
+            {
+                c = this.json[this.index];
+
+                if (c > ' ')
+                {
+                    break;
+                }
+
+                if (c != ' ' && c != '\t' && c != '\n' && c != '\r')
+                {
+                    break;
+                }
+            }
+            while (++this.index < this.json.Length);
+
+            if (this.index == this.json.Length)
+            {
+                throw new SerializationException("Reached end of string unexpectedly");
+            }
+
+            c = this.json[this.index];
+
+            this.index++;
+
+            // if (c >= '0' && c <= '9')
+            // return Token.Number;
+            switch (c)
+            {
+                case '{':
+                    return Token.CurlyOpen;
+
+                case '}':
+                    return Token.CurlyClose;
+
+                case '[':
+                    return Token.SquaredOpen;
+
+                case ']':
+                    return Token.SquaredClose;
+
+                case ',':
+                    return Token.Comma;
+
+                case '"':
+                    return Token.String;
+
+                case '0':
+                case '1':
+                case '2':
+                case '3':
+                case '4':
+                case '5':
+                case '6':
+                case '7':
+                case '8':
+                case '9':
+                case '-':
+                case '+':
+                case '.':
+                    return Token.Number;
+
+                case ':':
+                    return Token.Colon;
+
+                case 'f':
+                    if (this.json.Length - this.index >= 4 && this.json[this.index + 0] == 'a' && this.json[this.index + 1] == 'l' && this.json[this.index + 2] == 's' && this.json[this.index + 3] == 'e')
+                    {
+                        this.index += 4;
+                        return Token.False;
+                    }
+
+                    break;
+
+                case 't':
+                    if (this.json.Length - this.index >= 3 && this.json[this.index + 0] == 'r' && this.json[this.index + 1] == 'u' && this.json[this.index + 2] == 'e')
+                    {
+                        this.index += 3;
+                        return Token.True;
+                    }
+
+                    break;
+
+                case 'n':
+                    if (this.json.Length - this.index >= 3 && this.json[this.index + 0] == 'u' && this.json[this.index + 1] == 'l' && this.json[this.index + 2] == 'l')
+                    {
+                        this.index += 3;
+                        return Token.Null;
+                    }
+
+                    break;
+            }
+
+            throw new SerializationException("Could not find token at index " + --this.index);
+        }
+
+        /// <summary>
+        /// </summary>
+        /// <returns>
+        /// </returns>
+        /// <exception cref="SerializationException">
+        /// </exception>
+        private string ParseNumber()
+        {
+            this.ConsumeToken();
+
+            // Need to start back one place because the first digit is also a token and would have been consumed
+            var startIndex = this.index - 1;
+
+            do
+            {
+                var c = this.json[this.index];
+
+                if ((c >= '0' && c <= '9') || c == '.' || c == '-' || c == '+' || c == 'e' || c == 'E')
+                {
+                    if (++this.index == this.json.Length)
+                    {
+                        throw new SerializationException("Unexpected end of string whilst parsing number");
+                    }
+
+                    continue;
+                }
+
+                break;
+            }
+            while (true);
+
+            return new string(this.json, startIndex, this.index - startIndex);
+        }
+
+        /// <summary>
+        /// </summary>
+        /// <typeparam name="T">
+        /// </typeparam>
+        /// <returns>
+        /// </returns>
+        /// <exception cref="SerializationException">
+        /// </exception>
         private T ParseObject<T>()
         {
             var instanceParser = PropertyParseList<T>.Instance;
@@ -81,9 +549,9 @@
             {
                 throw new SerializationException("Expected curly open at index " + this.index);
             }
-            
+
             this.ConsumeToken(); // {
-            
+
             while (true)
             {
                 switch (this.LookAhead())
@@ -109,6 +577,7 @@
 
                             this.LookAhead();
                             instanceParser.Parse(this, instance, name);
+
                             //// value
                             ////object value = ParseValue();
 
@@ -120,90 +589,39 @@
             }
         }
 
-        internal long[] ParseInt64Array()
+        /// <summary>
+        /// </summary>
+        /// <param name="c1">
+        /// </param>
+        /// <param name="multipliyer">
+        /// </param>
+        /// <returns>
+        /// </returns>
+        private uint ParseSingleChar(char c1, uint multipliyer)
         {
-            return this.ParseArray(this.ParseInt64);
-        }
-
-        internal int[] ParseInt32Array()
-        {
-            return this.ParseArray(this.ParseInt32);
-        }
-
-        internal decimal[] ParseDecimalArray()
-        {
-            return this.ParseArray(this.ParseDecimal);
-        }
-
-        internal string[] ParseStringArray()
-        {
-            return this.ParseArray(this.ParseString);
-        }
-
-        internal T[] ParseArray<T>(Func<T> parse)
-        {
-            return ParseList<List<T>, T>(parse).ToArray();
-        }
-
-        internal TList ParseList<TList, TItem>(Func<TItem> parse) 
-            where TList : IList<TItem>
-        {
-            var array = PropertyParseList<TList>.Instance.New();
-            this.ConsumeToken(); // [
-
-            while (true)
+            uint p1 = 0;
+            if (c1 >= '0' && c1 <= '9')
             {
-                switch (this.LookAhead())
-                {
-                    case Token.Comma:
-                        this.ConsumeToken();
-                        break;
-
-                    case Token.SquaredClose:
-                        this.ConsumeToken();
-                        return array;
-
-                    default:
-                        array.Add(parse());
-                        break;
-                }
+                p1 = (uint)(c1 - '0') * multipliyer;
             }
-        }
-
-        /*
-        private T ParseValue<T>()
-        {
-            switch (this.LookAhead())
+            else if (c1 >= 'A' && c1 <= 'F')
             {
-                case Token.Number:
-                    return (T)Convert.ChangeType(this.ParseNumber(), typeof(T));
-
-                case Token.String:
-                    return (T)Convert.ChangeType(this.ParseString(), typeof(T));
-
-                case Token.CurlyOpen:
-                    return ParseObject<T>();
-
-                case Token.SquaredOpen:
-                    return ParseArray<T>();
-
-                case Token.True:
-                    this.ConsumeToken();
-                    return true;
-
-                case Token.False:
-                    this.ConsumeToken();
-                    return false;
-
-                case Token.Null:
-                    this.ConsumeToken();
-                    return default(T);
+                p1 = (uint)((c1 - 'A') + 10) * multipliyer;
+            }
+            else if (c1 >= 'a' && c1 <= 'f')
+            {
+                p1 = (uint)((c1 - 'a') + 10) * multipliyer;
             }
 
-            throw new SerializationException("Unrecognized token at index" + this.index);
+            return p1;
         }
-        */
 
+        /// <summary>
+        /// </summary>
+        /// <returns>
+        /// </returns>
+        /// <exception cref="SerializationException">
+        /// </exception>
         private string ParseString()
         {
             this.ConsumeToken(); // "
@@ -227,6 +645,7 @@
 
                         this.s.Append(this.json, runIndex, this.index - runIndex - 1);
                     }
+
                     return this.s.ToString();
                 }
 
@@ -240,7 +659,10 @@
                     continue;
                 }
 
-                if (this.index == this.json.Length) break;
+                if (this.index == this.json.Length)
+                {
+                    break;
+                }
 
                 if (runIndex != -1)
                 {
@@ -285,7 +707,10 @@
                     case 'u':
                         {
                             int remainingLength = this.json.Length - this.index;
-                            if (remainingLength < 4) break;
+                            if (remainingLength < 4)
+                            {
+                                break;
+                            }
 
                             // parse the 32 bit hex into an integer codepoint
                             uint codePoint = this.ParseUnicode(this.json[this.index], this.json[this.index + 1], this.json[this.index + 2], this.json[this.index + 3]);
@@ -302,25 +727,18 @@
             throw new SerializationException("Unexpectedly reached end of string");
         }
 
-        private uint ParseSingleChar(char c1, uint multipliyer)
-        {
-            uint p1 = 0;
-            if (c1 >= '0' && c1 <= '9')
-            {
-                p1 = (uint)(c1 - '0') * multipliyer;
-            }
-            else if (c1 >= 'A' && c1 <= 'F')
-            {
-                p1 = (uint)((c1 - 'A') + 10) * multipliyer;
-            }
-            else if (c1 >= 'a' && c1 <= 'f')
-            {
-                p1 = (uint)((c1 - 'a') + 10) * multipliyer;
-            }
-
-            return p1;
-        }
-
+        /// <summary>
+        /// </summary>
+        /// <param name="c1">
+        /// </param>
+        /// <param name="c2">
+        /// </param>
+        /// <param name="c3">
+        /// </param>
+        /// <param name="c4">
+        /// </param>
+        /// <returns>
+        /// </returns>
         private uint ParseUnicode(char c1, char c2, char c3, char c4)
         {
             uint p1 = this.ParseSingleChar(c1, 0x1000);
@@ -330,177 +748,6 @@
             return p1 + p2 + p3 + p4;
         }
 
-        private string ParseNumber()
-        {
-            this.ConsumeToken();
-
-            // Need to start back one place because the first digit is also a token and would have been consumed
-            var startIndex = this.index - 1;
-
-            do
-            {
-                var c = this.json[this.index];
-
-                if ((c >= '0' && c <= '9') || c == '.' || c == '-' || c == '+' || c == 'e' || c == 'E')
-                {
-                    if (++this.index == this.json.Length)
-                    {
-                        throw new SerializationException("Unexpected end of string whilst parsing number");
-                    }
-
-                    continue;
-                }
-
-                break;
-            } while (true);
-
-            return new string(this.json, startIndex, this.index - startIndex);
-        }
-
-        internal long ParseInt64()
-        {
-            return long.Parse(this.ParseNumber());
-        }
-
-        internal int ParseInt32()
-        {
-            return int.Parse(this.ParseNumber());
-        }
-
-        internal decimal ParseDecimal()
-        {
-            return decimal.Parse(this.ParseNumber());
-        }
-
-        private Token LookAhead()
-        {
-            if (this.lookAheadToken != Token.None) return this.lookAheadToken;
-
-            return this.lookAheadToken = this.NextTokenCore();
-        }
-
-        private void ConsumeToken()
-        {
-            this.lookAheadToken = Token.None;
-        }
-
-        private Token NextToken()
-        {
-            var result = this.lookAheadToken != Token.None ? this.lookAheadToken : this.NextTokenCore();
-            this.lookAheadToken = Token.None;
-            return result;
-        }
-
-        private Token NextTokenCore()
-        {
-            char c;
-
-            // Skip past whitespace
-            do
-            {
-                c = this.json[this.index];
-
-                if (c > ' ')
-                {
-                    break;
-                }
-
-                if (c != ' ' && c != '\t' && c != '\n' && c != '\r')
-                {
-                    break;
-                }
-            } while (++this.index < this.json.Length);
-
-            if (this.index == this.json.Length)
-            {
-                throw new SerializationException("Reached end of string unexpectedly");
-            }
-
-            c = this.json[this.index];
-
-            this.index++;
-
-            //if (c >= '0' && c <= '9')
-            //    return Token.Number;
-
-            switch (c)
-            {
-                case '{':
-                    return Token.CurlyOpen;
-
-                case '}':
-                    return Token.CurlyClose;
-
-                case '[':
-                    return Token.SquaredOpen;
-
-                case ']':
-                    return Token.SquaredClose;
-
-                case ',':
-                    return Token.Comma;
-
-                case '"':
-                    return Token.String;
-
-                case '0':
-                case '1':
-                case '2':
-                case '3':
-                case '4':
-                case '5':
-                case '6':
-                case '7':
-                case '8':
-                case '9':
-                case '-':
-                case '+':
-                case '.':
-                    return Token.Number;
-
-                case ':':
-                    return Token.Colon;
-
-                case 'f':
-                    if (this.json.Length - this.index >= 4 &&
-                        this.json[this.index + 0] == 'a' &&
-                        this.json[this.index + 1] == 'l' &&
-                        this.json[this.index + 2] == 's' &&
-                        this.json[this.index + 3] == 'e')
-                    {
-                        this.index += 4;
-                        return Token.False;
-                    }
-
-                    break;
-
-                case 't':
-                    if (this.json.Length - this.index >= 3 &&
-                        this.json[this.index + 0] == 'r' &&
-                        this.json[this.index + 1] == 'u' &&
-                        this.json[this.index + 2] == 'e')
-                    {
-                        this.index += 3;
-                        return Token.True;
-                    }
-
-                    break;
-
-                case 'n':
-                    if (this.json.Length - this.index >= 3 &&
-                        this.json[this.index + 0] == 'u' &&
-                        this.json[this.index + 1] == 'l' &&
-                        this.json[this.index + 2] == 'l')
-                    {
-                        this.index += 3;
-                        return Token.Null;
-                    }
-
-                    break;
-
-            }
-
-            throw new SerializationException("Could not find token at index " + --this.index);
-        }
+        #endregion
     }
 }

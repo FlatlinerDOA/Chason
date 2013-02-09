@@ -143,7 +143,7 @@ namespace Chason.UnitTests.Deserializing
         }
 
         [TestMethod]
-        public void TheTimSpanIsDeserializedCorrectly()
+        public void TheTimeSpanIsDeserializedCorrectly()
         {
             this.result.TimeSpan.Should().Be(new TimeSpan(1, 2, 3, 4, 567));
         }
