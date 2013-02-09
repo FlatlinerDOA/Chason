@@ -288,25 +288,53 @@ namespace Chason
         /// </returns>
         private IEnumerable<Expression> WriteObject(ParameterExpression instance, ParameterExpression writer)
         {
+            return WriteObject(typeof(T), instance, writer);
+        }
+
+        private IEnumerable<Expression> WriteObject(Type objectType, ParameterExpression instance, ParameterExpression writer)
+        {
             var members =
-                from p in typeof(T).GetProperties(BindingFlags.FlattenHierarchy | BindingFlags.Instance | BindingFlags.Public)
-                from c in p.GetCustomAttributes(true).OfType<DataMemberAttribute>()
-                where c != null
-                orderby c.Name ?? p.Name, c.Order
-                select new { Property = p, Contract = c };
+               from p in objectType.GetProperties(BindingFlags.FlattenHierarchy | BindingFlags.Instance | BindingFlags.Public)
+               from c in p.GetCustomAttributes(true).OfType<DataMemberAttribute>()
+               where c != null
+               orderby c.Name ?? p.Name, c.Order
+               select new { Property = p, Contract = c };
+
+            var literalTypes = new HashSet<Type> { typeof(int), typeof(long), typeof(uint), typeof(ulong), typeof(decimal) };
+
+            var objectAsStringTypes = new HashSet<Type> 
+            {
+                typeof(DateTime),
+                typeof(DateTimeOffset),
+                typeof(TimeSpan),
+                typeof(TimeZoneInfo)
+            };
 
             bool first = true;
             yield return this.WriteConstant("{", writer);
             foreach (var m in members)
             {
                 yield return this.WriteStartProperty(m.Property, m.Contract, first, writer);
-                if (m.Property.PropertyType == typeof(string))
+
+                var type = m.Property.PropertyType;
+                if (type == typeof(string))
                 {
                     yield return this.WriteString(m.Property, instance, writer);
                 }
-                else
+                else if (literalTypes.Contains(type))
                 {
                     yield return this.WriteLiteral(m.Property, instance, writer);
+                }
+                else if (objectAsStringTypes.Contains(type))
+                {
+                    yield return this.WriteObjectAsString(m.Property, instance, writer);
+                }
+                else
+                {
+                    foreach (var ex in this.WriteObject(m.Property.PropertyType, instance, writer))
+                    {
+                        yield return ex;
+                    }
                 }
 
                 first = false;
@@ -337,7 +365,7 @@ namespace Chason
             params Expression[] arguments)
         {
             var getterCall = Expression.Property(instance, property, arguments);
-            var toString = Expression.Call(getterCall, property.PropertyType.GetMethod(toStringMethodName), arguments);
+            var toString = Expression.Call(getterCall, toStringMethodName, new Type[0], arguments);
 
             // TODO: Figure out if we need to escape these values i.e call EscapeString method?
             return Expression.Call(writer, this.writeStringMethod, new Expression[] { toString });

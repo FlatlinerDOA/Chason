@@ -41,20 +41,32 @@ namespace Chason
         {
             { typeof(string), "ParseString" }, 
             { typeof(string[]), "ParseStringArray" }, 
+            { typeof(short), "ParseInt16" }, 
+            { typeof(short[]), "ParseInt16Array" }, 
             { typeof(int), "ParseInt32" }, 
             { typeof(int[]), "ParseInt32Array" }, 
             { typeof(long), "ParseInt64" }, 
             { typeof(long[]), "ParseInt64Array" }, 
-            { typeof(decimal), "ParseDecimal" }, 
-            { typeof(decimal[]), "ParseDecimalArray" }, 
+            { typeof(ushort), "ParseUInt16" }, 
+            { typeof(ushort[]), "ParseUInt16Array" },
             { typeof(uint), "ParseUInt32" }, 
             { typeof(uint[]), "ParseUInt32Array" },
             { typeof(ulong), "ParseUInt64" },
             { typeof(ulong[]), "ParseUInt64Array" },
+            { typeof(float), "ParseFloat" }, 
+            { typeof(float[]), "ParseFloatArray" }, 
+            { typeof(double), "ParseDouble" }, 
+            { typeof(double[]), "ParseDoubleArray" }, 
+            { typeof(decimal), "ParseDecimal" }, 
+            { typeof(decimal[]), "ParseDecimalArray" }, 
             { typeof(DateTime), "ParseDateTime" },
             { typeof(DateTime[]), "ParseDateTimeArray" },
             { typeof(DateTimeOffset), "ParseDateTimeOffset" },
             { typeof(DateTimeOffset[]), "ParseDateTimeOffsetArray" },
+            { typeof(TimeSpan), "ParseTimeSpan" },
+            { typeof(TimeSpan[]), "ParseTimeSpanArray" },
+            { typeof(TimeZoneInfo), "ParseTimeZoneInfo" },
+            { typeof(TimeZoneInfo[]), "ParseTimeZoneInfoArray" },
         };
 
         #endregion
@@ -310,7 +322,79 @@ namespace Chason
         {
             return this.ParseArray(this.ParseUInt64);
         }
-        
+
+        /// <summary>
+        /// </summary>
+        /// <returns>
+        /// </returns>
+        internal float ParseFloat()
+        {
+            return float.Parse(this.ParseNumber());
+        }
+
+        /// <summary>
+        /// </summary>
+        /// <returns>
+        /// </returns>
+        internal float[] ParseFloatArray()
+        {
+            return this.ParseArray(this.ParseFloat);
+        }
+
+        /// <summary>
+        /// </summary>
+        /// <returns>
+        /// </returns>
+        internal double ParseDouble()
+        {
+            return double.Parse(this.ParseNumber());
+        }
+
+        /// <summary>
+        /// </summary>
+        /// <returns>
+        /// </returns>
+        internal double[] ParseDoubleArray()
+        {
+            return this.ParseArray(this.ParseDouble);
+        }
+
+        /// <summary>
+        /// </summary>
+        /// <returns>
+        /// </returns>
+        internal short ParseInt16()
+        {
+            return short.Parse(this.ParseNumber());
+        }
+
+        /// <summary>
+        /// </summary>
+        /// <returns>
+        /// </returns>
+        internal short[] ParseInt16Array()
+        {
+            return this.ParseArray(this.ParseInt16);
+        }
+
+        /// <summary>
+        /// </summary>
+        /// <returns>
+        /// </returns>
+        internal ushort ParseUInt16()
+        {
+            return ushort.Parse(this.ParseNumber());
+        }
+
+        /// <summary>
+        /// </summary>
+        /// <returns>
+        /// </returns>
+        internal ushort[] ParseUInt16Array()
+        {
+            return this.ParseArray(this.ParseUInt16);
+        }
+
         /// <summary>
         /// </summary>
         /// <returns>
@@ -344,7 +428,8 @@ namespace Chason
         /// </returns>
         internal DateTime ParseDateTime()
         {
-            return DateTime.Parse(this.ParseString());
+            var st = this.ParseString();
+            return DateTime.Parse(st, this.settings.CultureInfo, this.settings.DateTimeStyles);
         }
 
         /// <summary>
@@ -362,7 +447,8 @@ namespace Chason
         /// </returns>
         internal DateTimeOffset ParseDateTimeOffset()
         {
-            return DateTimeOffset.Parse(this.ParseString());
+            var dt = this.ParseString();
+            return DateTimeOffset.Parse(dt, this.settings.CultureInfo, this.settings.DateTimeStyles);
         }
 
         /// <summary>
@@ -372,6 +458,45 @@ namespace Chason
         internal DateTimeOffset[] ParseDateTimeOffsetArray()
         {
             return this.ParseArray(this.ParseDateTimeOffset);
+        }
+
+
+        /// <summary>
+        /// </summary>
+        /// <returns>
+        /// </returns>
+        internal TimeSpan ParseTimeSpan()
+        {
+            var ts = this.ParseString();
+            return TimeSpan.ParseExact(ts, this.settings.TimeSpanFormat, this.settings.CultureInfo, this.settings.TimeSpanStyles);
+        }
+
+        /// <summary>
+        /// </summary>
+        /// <returns>
+        /// </returns>
+        internal TimeSpan[] ParseTimeSpanArray()
+        {
+            return this.ParseArray(this.ParseTimeSpan);
+        }
+
+        /// <summary>
+        /// </summary>
+        /// <returns>
+        /// </returns>
+        internal TimeZoneInfo ParseTimeZoneInfo()
+        {
+            throw new NotSupportedException("Not supported by WinRT");
+            ////return TimeZoneInfo.froms(this.ParseString());
+        }
+
+        /// <summary>
+        /// </summary>
+        /// <returns>
+        /// </returns>
+        internal TimeZoneInfo[] ParseTimeZoneInfoArray()
+        {
+            return this.ParseArray(this.ParseTimeZoneInfo);
         }
 
         /// <summary>

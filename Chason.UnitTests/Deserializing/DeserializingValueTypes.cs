@@ -15,7 +15,8 @@ namespace Chason.UnitTests.Deserializing
     [TestClass]
     public sealed class DeserializingValueTypes
     {
-        private const string JsonText = @"{""String"":""String"",""SignedInt32"":12345,""SignedInt64"":123456789,""UnsignedInt32"":123456,""UnsignedInt64"":1234567890,""Decimal"":1.23456789,""Double"":1.123456,""Float"":123.45,""Single"":1.2,""DateTime"":""1997-07-16T19:20:30.45+01:00"",""DateTimeInfo"":""2013-02-07T23:33:27.4655239+08:00"",""TimeSpan"":""1.02:03:04.567"",""TimeZoneInfo"":""AUS Eastern Standard Time""}";
+        //,""TimeZoneInfo"":""AUS Eastern Standard Time""
+        private const string JsonText = @"{""String"":""String"",""SignedInt16"":255,""SignedInt32"":12345,""SignedInt64"":123456789,""UnsignedInt16"":1255,""UnsignedInt32"":123456,""UnsignedInt64"":1234567890,""Decimal"":1.23456789,""Double"":1.123456,""Float"":123.45,""DateTime"":""1997-7-16T19:20:30.450000+08:00"",""DateTimeOffset"":""2013-02-07T23:33:27.988000+08:00"",""TimeSpan"":""1.02:03:04.567""}";
 
         private SupportedValueTypesContract result;
 
@@ -30,10 +31,16 @@ namespace Chason.UnitTests.Deserializing
             public string String { get; set; }
 
             [DataMember]
+            public short SignedInt16 { get; set; }
+
+            [DataMember]
             public int SignedInt32 { get; set; }
 
             [DataMember]
             public long SignedInt64 { get; set; }
+
+            [DataMember]
+            public ushort UnsignedInt16 { get; set; }
 
             [DataMember]
             public uint UnsignedInt32 { get; set; }
@@ -45,13 +52,10 @@ namespace Chason.UnitTests.Deserializing
             public decimal Decimal { get; set; }
 
             [DataMember]
-            public double Double { get; set; }
-
-            [DataMember]
             public float Float { get; set; }
 
             [DataMember]
-            public Single Single { get; set; }
+            public double Double { get; set; }
 
             [DataMember]
             public DateTime DateTime { get; set; }
@@ -62,8 +66,8 @@ namespace Chason.UnitTests.Deserializing
             [DataMember]
             public TimeSpan TimeSpan { get; set; }
 
-            [DataMember]
-            public TimeZoneInfo TimeZoneInfo { get; set; }
+            ////[DataMember]
+            ////public TimeZoneInfo TimeZoneInfo { get; set; }
         }
 
         [TestInitialize]
@@ -92,13 +96,11 @@ namespace Chason.UnitTests.Deserializing
             this.result.SignedInt64.Should().Be(123456789);
         }
 
-
         [TestMethod]
         public void TheUnsignedInt32IsDeserializedCorrectly()
         {
             this.result.UnsignedInt32.Should().Be(123456);
         }
-
 
         [TestMethod]
         public void TheUnsignedInt64IsDeserializedCorrectly()
@@ -125,21 +127,28 @@ namespace Chason.UnitTests.Deserializing
         }
 
         [TestMethod]
-        public void TheSingleIsDeserializedCorrectly()
+        public void TheSignedInt16IsDeserializedCorrectly()
         {
-            this.result.Single.Should().Be(1.2F);
+            this.result.SignedInt16.Should().Be(255);
+        }
+
+
+        [TestMethod]
+        public void TheUnsignedInt16IsDeserializedCorrectly()
+        {
+            this.result.UnsignedInt16.Should().Be(1255);
         }
 
         [TestMethod]
         public void TheDateTimeIsDeserializedAsUnspecifiedWithOffsetTruncated()
         {
-            this.result.DateTime.Should().Be(new DateTime(1997, 7, 16, 19, 20, 30, 45, DateTimeKind.Unspecified));
+            this.result.DateTime.Should().Be(new DateTime(1997, 7, 16, 19, 20, 30, 450, DateTimeKind.Unspecified));
         }
 
         [TestMethod]
         public void TheDateTimeOffsetIsDeserializedCorrectly()
         {
-            this.result.DateTimeOffset.Should().Be(new DateTimeOffset(2013, 2, 7, 23, 33, 27, 4655239, TimeSpan.FromHours(8)));
+            this.result.DateTimeOffset.Should().Be(new DateTimeOffset(2013, 2, 7, 23, 33, 27, 988, TimeSpan.FromHours(8)));
         }
 
         [TestMethod]
@@ -148,10 +157,10 @@ namespace Chason.UnitTests.Deserializing
             this.result.TimeSpan.Should().Be(new TimeSpan(1, 2, 3, 4, 567));
         }
 
-        [TestMethod]
-        public void TheTimeZoneInfoIsDeserializedToTheCorrectTimeZone()
-        {
-            this.result.TimeZoneInfo.Should().Be(this.expectedTimeZone);
-        }
+        ////[TestMethod]
+        ////public void TheTimeZoneInfoIsDeserializedToTheCorrectTimeZone()
+        ////{
+        ////    this.result.TimeZoneInfo.Should().Be(this.expectedTimeZone);
+        ////}
     }
 }

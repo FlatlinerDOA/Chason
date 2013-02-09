@@ -38,15 +38,24 @@
         /// </summary>
         private string dateTimeFormatString;
 
+        private DateTimeStyles dateTimeStyles;
+
+        private TimeSpanStyles timeSpanStyles;
+
+        private string timeSpanFormat;
+
         /// <summary>
         /// Initalizes a new instance of the <see cref="ChasonSerializerSettings"/> class.
         /// </summary>
         public ChasonSerializerSettings()
         {
-            this.DateTimeFormatString = "o";
+            this.DateTimeFormat = "o";
             this.CultureInfo = CultureInfo.InvariantCulture;
             this.TextEncoding = Encoding.UTF8;
             this.KnownTypes = new List<Type>();
+            this.TimeSpanFormat = "c";
+            this.TimeSpanStyles = TimeSpanStyles.None;
+            this.DateTimeStyles = DateTimeStyles.RoundtripKind;
         }
 
         /// <summary>
@@ -101,7 +110,7 @@
         /// <summary>
         /// Gets or sets the format string to output dates with (defaults to 'o' or ISO-8601 format)
         /// </summary>
-        public string DateTimeFormatString
+        public string DateTimeFormat
         {
             get
             {
@@ -112,6 +121,53 @@
             {
                 this.EnsureNotReadOnly();
                 this.dateTimeFormatString = value;
+            }
+        }
+
+        public DateTimeStyles DateTimeStyles
+        {
+            get
+            {
+                return this.dateTimeStyles;
+            }
+            set
+            {
+                this.EnsureNotReadOnly();
+                this.dateTimeStyles = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the time span styles
+        /// </summary>
+        public TimeSpanStyles TimeSpanStyles
+        {
+            get
+            {
+                return this.timeSpanStyles;
+            }
+
+            set
+            {
+                this.EnsureNotReadOnly();
+                this.timeSpanStyles = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the time span format
+        /// </summary>
+        public string TimeSpanFormat
+        {
+            get
+            {
+                return this.timeSpanFormat;
+            }
+
+            set
+            {
+                this.EnsureNotReadOnly();
+                this.timeSpanFormat = value;
             }
         }
 
