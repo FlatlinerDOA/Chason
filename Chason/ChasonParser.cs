@@ -37,18 +37,24 @@ namespace Chason
 
         /// <summary>
         /// </summary>
-        internal static readonly Dictionary<Type, MethodInfo> TypeParseMethods = new Dictionary<Type, MethodInfo> 
+        internal static readonly Dictionary<Type, string> TypeParseMethods = new Dictionary<Type, string> 
         {
-            { typeof(string), typeof(ChasonParser).GetMethod("ParseString") }, 
-            { typeof(string[]), typeof(ChasonParser).GetMethod("ParseStringArray") }, 
-            { typeof(int), typeof(ChasonParser).GetMethod("ParseInt32") }, 
-            { typeof(int[]), typeof(ChasonParser).GetMethod("ParseInt32Array") }, 
-            { typeof(long), typeof(ChasonParser).GetMethod("ParseInt64") }, 
-            { typeof(long[]), typeof(ChasonParser).GetMethod("ParseInt64Array") }, 
-            { typeof(decimal), typeof(ChasonParser).GetMethod("ParseDecimal") }, 
-            { typeof(decimal[]), typeof(ChasonParser).GetMethod("ParseDecimalArray") }, 
-            { typeof(uint), typeof(ChasonParser).GetMethod("ParseUInt32") }, 
-            { typeof(uint?), typeof(ChasonParser).GetMethod("ParseUInt64") }
+            { typeof(string), "ParseString" }, 
+            { typeof(string[]), "ParseStringArray" }, 
+            { typeof(int), "ParseInt32" }, 
+            { typeof(int[]), "ParseInt32Array" }, 
+            { typeof(long), "ParseInt64" }, 
+            { typeof(long[]), "ParseInt64Array" }, 
+            { typeof(decimal), "ParseDecimal" }, 
+            { typeof(decimal[]), "ParseDecimalArray" }, 
+            { typeof(uint), "ParseUInt32" }, 
+            { typeof(uint[]), "ParseUInt32Array" },
+            { typeof(ulong), "ParseUInt64" },
+            { typeof(ulong[]), "ParseUInt64Array" },
+            { typeof(DateTime), "ParseDateTime" },
+            { typeof(DateTime[]), "ParseDateTimeArray" },
+            { typeof(DateTimeOffset), "ParseDateTimeOffset" },
+            { typeof(DateTimeOffset[]), "ParseDateTimeOffsetArray" },
         };
 
         #endregion
@@ -173,6 +179,10 @@ namespace Chason
         /// </returns>
         public T Parse<T>()
         {
+            ////var p = Expression.Parameter(typeof(ChasonParser));
+            ////var methodCall = GetParseMethodCall(typeof(T), p);
+            ////var lambda = Expression.Lambda<Func<ChasonParser, T>>(methodCall, p).Compile();
+            ////return lambda(this);
             if (typeof(T).IsGenericType)
             {
                 var generic = typeof(T).GetGenericTypeDefinition();
@@ -204,12 +214,13 @@ namespace Chason
         {
             if (Nullable.GetUnderlyingType(type) != null)
             {
+                Expression<Func<ChasonParser, TryParseDelegate<int>, int?>> x = (p, d) => p.ParseNullable(d);
                 return Expression.Call(parserParameter, "ParseNullable", new[] { type });
             }
 
             if (TypeParseMethods.ContainsKey(type))
             {
-                return Expression.Call(parserParameter, TypeParseMethods[type]);
+                return Expression.Call(parserParameter, TypeParseMethods[type], new Type[0]);
             }
 
             if (type.IsGenericType)
@@ -268,6 +279,42 @@ namespace Chason
         /// </summary>
         /// <returns>
         /// </returns>
+        internal uint ParseUInt32()
+        {
+            return uint.Parse(this.ParseNumber());
+        }
+
+        /// <summary>
+        /// </summary>
+        /// <returns>
+        /// </returns>
+        internal uint[] ParseUInt32Array()
+        {
+            return this.ParseArray(this.ParseUInt32);
+        }
+
+        /// <summary>
+        /// </summary>
+        /// <returns>
+        /// </returns>
+        internal ulong ParseUInt64()
+        {
+            return ulong.Parse(this.ParseNumber());
+        }
+
+        /// <summary>
+        /// </summary>
+        /// <returns>
+        /// </returns>
+        internal ulong[] ParseUInt64Array()
+        {
+            return this.ParseArray(this.ParseUInt64);
+        }
+        
+        /// <summary>
+        /// </summary>
+        /// <returns>
+        /// </returns>
         internal int[] ParseInt32Array()
         {
             return this.ParseArray(this.ParseInt32);
@@ -289,6 +336,42 @@ namespace Chason
         internal long[] ParseInt64Array()
         {
             return this.ParseArray(this.ParseInt64);
+        }
+
+        /// <summary>
+        /// </summary>
+        /// <returns>
+        /// </returns>
+        internal DateTime ParseDateTime()
+        {
+            return DateTime.Parse(this.ParseString());
+        }
+
+        /// <summary>
+        /// </summary>
+        /// <returns>
+        /// </returns>
+        internal DateTime[] ParseDateTimeArray()
+        {
+            return this.ParseArray(this.ParseDateTime);
+        }
+
+        /// <summary>
+        /// </summary>
+        /// <returns>
+        /// </returns>
+        internal DateTimeOffset ParseDateTimeOffset()
+        {
+            return DateTimeOffset.Parse(this.ParseString());
+        }
+
+        /// <summary>
+        /// </summary>
+        /// <returns>
+        /// </returns>
+        internal DateTimeOffset[] ParseDateTimeOffsetArray()
+        {
+            return this.ParseArray(this.ParseDateTimeOffset);
         }
 
         /// <summary>

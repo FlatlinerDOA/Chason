@@ -289,8 +289,7 @@ namespace Chason
         private IEnumerable<Expression> WriteObject(ParameterExpression instance, ParameterExpression writer)
         {
             var members =
-                from p in
-                    typeof(T).GetProperties(BindingFlags.FlattenHierarchy | BindingFlags.Instance | BindingFlags.Public)
+                from p in typeof(T).GetProperties(BindingFlags.FlattenHierarchy | BindingFlags.Instance | BindingFlags.Public)
                 from c in p.GetCustomAttributes(true).OfType<DataMemberAttribute>()
                 where c != null
                 orderby c.Name ?? p.Name, c.Order
