@@ -62,7 +62,7 @@ namespace Chason.UnitTests.Serializing
         public void SlashSlashCarriageReturnLineFeedSlash()
         {
             var result = this.serializer.Serialize(new SimpleStringContract() { Text = "\\\\\r\n\\" });
-            result.Should().Be("{\"Text\":\"\\\\\\\\\\r\\n\\\"}");
+            result.Should().Be(@"{""Text"":""\\\\\r\n\\""}");
         }
     }
 }
