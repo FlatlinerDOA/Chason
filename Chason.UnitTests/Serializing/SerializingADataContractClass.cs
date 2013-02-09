@@ -1,17 +1,16 @@
 ﻿
-namespace Chason.UnitTests
+namespace Chason.UnitTests.Serializing
 {
-    using System;
-    using System.Diagnostics;
     using System.IO;
     using System.Runtime.Serialization.Json;
     using System.Text;
 
     using FluentAssertions;
+
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
-    public class WhenSerializingADataContractClass
+    public class SerializingADataContractClass
     {
         private readonly TestDataContract test = new TestDataContract { FirstString = "First \"String\" ", SecondString = "Second \\ 'String' ", FirstInt = 1,  };
         //FirstDate = new DateTime(2000, 1, 1), SecondDate = new DateTime(2001, 1, 1)
@@ -25,18 +24,18 @@ namespace Chason.UnitTests
         public void IntializeTest()
         {
             this.serializer = new ChasonSerializer<TestDataContract>();
-            serializer.Serialize(test, this.result);
+            this.serializer.Serialize(this.test, this.result);
             this.textResult = Encoding.UTF8.GetString(this.result.ToArray());
         }
 
         [TestMethod]
-        public void ThenTheOutputStreamIsNotEmpty()
+        public void TheOutputStreamIsNotEmpty()
         {
             this.result.Length.Should().NotBe(0);
         }
 
         [TestMethod]
-        public void ThenTheTextResultEqualsTheCorrectJson()
+        public void TheTextResultEqualsTheCorrectJson()
         {
             var m = new MemoryStream();
             var s = new DataContractJsonSerializer(typeof(TestDataContract));

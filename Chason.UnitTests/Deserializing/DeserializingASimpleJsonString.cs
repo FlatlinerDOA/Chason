@@ -1,4 +1,8 @@
-﻿
+﻿//--------------------------------------------------------------------------------------------------
+// <copyright file="DeserializingASimpleJsonString.cs" company="Andrew Chisholm">
+//   Copyright (c) 2013 Andrew Chisholm All rights reserved.
+// </copyright>
+//--------------------------------------------------------------------------------------------------
 namespace Chason.UnitTests.Deserializing
 {
     using FluentAssertions;
@@ -6,7 +10,7 @@ namespace Chason.UnitTests.Deserializing
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
-    public sealed class GivenASimpleJsonString
+    public sealed class DeserializingASimpleJsonString
     {
         private ChasonSerializer<TestDataContract> parser;
 
@@ -20,19 +24,19 @@ namespace Chason.UnitTests.Deserializing
         }
 
         [TestMethod]
-        public void ThenTheResultIsNotNull()
+        public void TheResultIsNotNull()
         {
             this.result.Should().NotBeNull();
         }
 
         [TestMethod]
-        public void ThenTheResultFirstStringIsLoaded()
+        public void TheResultFirstStringIsLoaded()
         {
             this.result.FirstString.Should().Be("First \"String\" ");
         }
 
         [TestMethod]
-        public void ThenTheResultFirstIntIsLoaded()
+        public void TheResultFirstIntIsLoaded()
         {
             this.result.FirstInt.Should().Be(34);
         }

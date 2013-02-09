@@ -58,14 +58,15 @@
   <ItemGroup>
     <Compile Include="Deserializing\DeserializingArrays.cs" />
     <Compile Include="Deserializing\DeserializingCollections.cs" />
+    <Compile Include="Deserializing\DeserializingCustomNumberTypes.cs" />
     <Compile Include="Deserializing\DeserializingDictionaries.cs" />
     <Compile Include="Deserializing\DeserializingHashSets.cs" />
     <Compile Include="Deserializing\DeserializingValueTypes.cs" />
     <Compile Include="Deserializing\DeserializingNullableValueTypes.cs" />
-    <Compile Include="Deserializing\GivenASimpleJsonString.cs" />
+    <Compile Include="Deserializing\DeserializingASimpleJsonString.cs" />
+    <Compile Include="Serializing\WritingEscapedStrings.cs" />
     <Compile Include="TestDataContract.cs" />
-    <Compile Include="UnitTest1.cs" />
-    <Compile Include="Serializing\WhenSerializingADataContractClass.cs" />
+    <Compile Include="Serializing\SerializingADataContractClass.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -76,6 +77,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Deserializing\Polymorphic\" />
   </ItemGroup>
   <Choose>
     <When Condition="'$(VisualStudioVersion)' == '10.0' And '$(IsCodedUITest)' == 'True'">

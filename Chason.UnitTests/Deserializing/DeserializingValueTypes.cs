@@ -15,7 +15,7 @@ namespace Chason.UnitTests.Deserializing
     [TestClass]
     public sealed class DeserializingValueTypes
     {
-        public string JsonText = @"{""String"":""String"",""SignedInt32"":12345,""SignedInt64"":123456789,""UnsignedInt32"":123456,""UnsignedInt64"":1234567890,""Decimal"":1.23456789,""Double"":1.123,""Float"":123.45,""Single"":1.2,""DateTime"":""1997-07-16T19:20:30.45+01:00"",""DateTimeInfo"":""2013-02-07T23:33:27.4655239+11:00"",""TimeSpan"":""1.01:02:03.456"",""TimeZoneInfo"":""AUS Eastern Standard Time""}";
+        private const string JsonText = @"{""String"":""String"",""SignedInt32"":12345,""SignedInt64"":123456789,""UnsignedInt32"":123456,""UnsignedInt64"":1234567890,""Decimal"":1.23456789,""Double"":1.123,""Float"":123.45,""Single"":1.2,""DateTime"":""1997-07-16T19:20:30.45+01:00"",""DateTimeInfo"":""2013-02-07T23:33:27.4655239+11:00"",""TimeSpan"":""1.01:02:03.456"",""TimeZoneInfo"":""AUS Eastern Standard Time""}";
 
         private SupportedValueTypesContract result;
 
@@ -75,25 +75,25 @@ namespace Chason.UnitTests.Deserializing
         }
 
         [TestMethod]
-        public void ThenTheStringIsDeserializedCorrectly()
+        public void TheStringIsDeserializedCorrectly()
         {
             this.result.String.Should().Be("String");
         }
 
         [TestMethod]
-        public void ThenTheSignedInt32IsDeserializedCorrectly()
+        public void TheSignedInt32IsDeserializedCorrectly()
         {
             this.result.SignedInt32.Should().Be(12345);
         }
 
         [TestMethod]
-        public void ThenTheSignedInt64IsDeserializedCorrectly()
+        public void TheSignedInt64IsDeserializedCorrectly()
         {
             this.result.SignedInt64.Should().Be(123456789);
         }
 
         [TestMethod]
-        public void ThenTheTimeZoneInfoIsDeserializedToTheCorrectTimeZone()
+        public void TheTimeZoneInfoIsDeserializedToTheCorrectTimeZone()
         {
             this.result.TimeZoneInfo.Should().Be(this.expectedTimeZone);
         }

@@ -144,9 +144,7 @@
                 yield return WriteStartProperty(m.Property, m.Contract, first, writer);
                 if (m.Property.PropertyType == typeof(string))
                 {
-                    yield return this.WriteConstant("\"", writer);
                     yield return this.WriteString(m.Property, instance, writer);
-                    yield return this.WriteConstant("\"", writer);
                 }
                 else
                 {
@@ -173,11 +171,10 @@
 
         private Expression WriteString(PropertyInfo property, ParameterExpression instance, ParameterExpression writer)
         {
-            var getterCall = Expression.Call(instance, property.GetGetMethod());
-            var replaceMethod = typeof(string).GetMethod("Replace", new[] { typeof(string), typeof(string) });
-            var replaceCall = Expression.Call(getterCall, replaceMethod, Expression.Constant("\\"), Expression.Constant("\\\\"));
-            var secondReplaceCall = Expression.Call(replaceCall, replaceMethod, Expression.Constant("\""), Expression.Constant("\\\""));
-            return Expression.Call(writer, this.writeStringMethod, secondReplaceCall);
+            var getterCall = Expression.Property(instance, property);
+            var replaceMethod = this.GetType().GetMethod("EscapeString", new[] { typeof(string) });
+            var replaceCall = Expression.Call(null, replaceMethod, new Expression[] { getterCall });
+            return Expression.Call(writer, this.writeStringMethod, new Expression[] { replaceCall });
         }
 
         private Expression WriteLiteral(PropertyInfo property, ParameterExpression instance, ParameterExpression writer)
@@ -185,6 +182,75 @@
             var getterCall = Expression.Call(instance, property.GetGetMethod());
             var writeMethod = typeof(TextWriter).GetMethod("Write", new[] { property.PropertyType });
             return Expression.Call(writer, writeMethod, getterCall);
+        }
+
+        private static char[] charsToEscape = new[] { '"', '\\', '\r', '\n', '\t', '/', '\b', '\f' };
+        
+        public static string EscapeString(string input)
+        {
+            if (input == null)
+            {
+                return "null";
+            }
+
+
+            var sb = new StringBuilder();
+            sb.Append('"');
+            int lastIndex = 0;
+            int index = input.IndexOfAny(charsToEscape);
+            if (index == -1)
+            {
+                sb.Append(input);
+            }
+            else
+            {
+                while (index != -1)
+                {
+                    sb.Append(input, lastIndex, index - lastIndex);
+                    var c = input[index];
+                    if (c == '"')
+                    {
+                        sb.Append(@"\""");
+                    }
+                    else if (c == '\\')
+                    {
+                        sb.Append(@"\\");
+                    } 
+                    else if (c == '\r')
+                    {
+                        sb.Append(@"\r");
+                    }
+                    else if (c == '\n')
+                    {
+                        sb.Append(@"\n");
+                    }
+                    else if (c == '\t')
+                    {
+                        sb.Append(@"\t");
+                    }
+                    else if (c == '/')
+                    {
+                        sb.Append(@"\/");
+                    }
+                    else if (c == '\b')
+                    {
+                        sb.Append(@"\b");
+                    }
+                    else if (c == '\f')
+                    {
+                        sb.Append(@"\f");
+                    }
+
+                    index++;
+                    lastIndex = index;
+                    index = input.IndexOfAny(charsToEscape, index);
+                }
+
+                sb.Append(input, lastIndex, input.Length - lastIndex);
+            }
+
+            sb.Append('"');
+            return sb.ToString();
         }
     }
 }

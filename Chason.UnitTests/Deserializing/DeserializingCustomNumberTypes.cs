@@ -1,5 +1,5 @@
 ﻿//--------------------------------------------------------------------------------------------------
-// <copyright file="DeserializingCollections.cs" company="Andrew Chisholm">
+// <copyright file="DeserializingCustomNumberTypes.cs" company="Andrew Chisholm">
 //   Copyright (c) 2013 Andrew Chisholm All rights reserved.
 // </copyright>
 //--------------------------------------------------------------------------------------------------
@@ -9,7 +9,7 @@ namespace Chason.UnitTests.Deserializing
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
-    public sealed class DeserializingCollections
+    public sealed class DeserializingCustomNumberTypes
     {
     }
 }
