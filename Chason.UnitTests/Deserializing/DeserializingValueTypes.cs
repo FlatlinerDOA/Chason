@@ -16,7 +16,7 @@ namespace Chason.UnitTests.Deserializing
     public sealed class DeserializingValueTypes
     {
         //,""TimeZoneInfo"":""AUS Eastern Standard Time""
-        private const string JsonText = @"{""String"":""String"",""SignedInt16"":255,""SignedInt32"":12345,""SignedInt64"":123456789,""UnsignedInt16"":1255,""UnsignedInt32"":123456,""UnsignedInt64"":1234567890,""Decimal"":1.23456789,""Double"":1.123456,""Float"":123.45,""DateTime"":""1997-7-16T19:20:30.450000+08:00"",""DateTimeOffset"":""2013-02-07T23:33:27.988000+08:00"",""TimeSpan"":""1.02:03:04.567""}";
+        private const string JsonText = @"{""String"":""String"",""SignedInt16"":255,""SignedInt32"":12345,""SignedInt64"":123456789,""UnsignedInt16"":1255,""UnsignedInt32"":123456,""UnsignedInt64"":1234567890,""Decimal"":1.23456789,""Double"":1.123456,""Float"":123.45,""DateTime"":""1997-07-16T19:20:30"",""DateTimeOffset"":""2013-02-07T23:33:27.988000+08:00"",""TimeSpan"":""1.02:03:04.567""}";
 
         private SupportedValueTypesContract result;
 
@@ -132,7 +132,6 @@ namespace Chason.UnitTests.Deserializing
             this.result.SignedInt16.Should().Be(255);
         }
 
-
         [TestMethod]
         public void TheUnsignedInt16IsDeserializedCorrectly()
         {
@@ -142,7 +141,7 @@ namespace Chason.UnitTests.Deserializing
         [TestMethod]
         public void TheDateTimeIsDeserializedAsUnspecifiedWithOffsetTruncated()
         {
-            this.result.DateTime.Should().Be(new DateTime(1997, 7, 16, 19, 20, 30, 450, DateTimeKind.Unspecified));
+            this.result.DateTime.Should().Be(new DateTime(1997, 7, 16, 19, 20, 30, 0, DateTimeKind.Unspecified));
         }
 
         [TestMethod]

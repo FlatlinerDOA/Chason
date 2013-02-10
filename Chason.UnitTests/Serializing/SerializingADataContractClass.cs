@@ -40,8 +40,9 @@ namespace Chason.UnitTests.Serializing
             var m = new MemoryStream();
             var s = new DataContractJsonSerializer(typeof(TestDataContract));
             s.WriteObject(m, this.test);
+            
             var expected = Encoding.UTF8.GetString(m.ToArray());
-            Assert.AreEqual(expected, this.textResult);
+            Assert.AreEqual(expected, this.textResult, false);
         }
     }
 }

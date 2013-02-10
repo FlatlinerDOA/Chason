@@ -44,18 +44,21 @@
 
         private string timeSpanFormat;
 
+        private string dateTimeOffsetFormat;
+
         /// <summary>
         /// Initalizes a new instance of the <see cref="ChasonSerializerSettings"/> class.
         /// </summary>
         public ChasonSerializerSettings()
         {
-            this.DateTimeFormat = "o";
+            this.DateTimeFormat = "yyyy-MM-dd\\THH:mm:ss";
+            this.DateTimeOffsetFormat = "yyyy-MM-dd\\THH:mm:ss.ffffffzzz";
             this.CultureInfo = CultureInfo.InvariantCulture;
             this.TextEncoding = Encoding.UTF8;
             this.KnownTypes = new List<Type>();
             this.TimeSpanFormat = "c";
             this.TimeSpanStyles = TimeSpanStyles.None;
-            this.DateTimeStyles = DateTimeStyles.RoundtripKind;
+            this.DateTimeStyles = DateTimeStyles.None;
         }
 
         /// <summary>
@@ -108,7 +111,7 @@
         }
 
         /// <summary>
-        /// Gets or sets the format string to output dates with (defaults to 'o' or ISO-8601 format)
+        /// Gets or sets the format string to output dates with. Defaults to 'yyyy-MM-ddThh:mm:ss' which is ISO-8601 format without offset information)
         /// </summary>
         public string DateTimeFormat
         {
@@ -121,6 +124,20 @@
             {
                 this.EnsureNotReadOnly();
                 this.dateTimeFormatString = value;
+            }
+        }
+
+        public string DateTimeOffsetFormat
+        {
+            get
+            {
+                return this.dateTimeOffsetFormat;
+            }
+
+            set
+            {
+                this.EnsureNotReadOnly();
+                this.dateTimeOffsetFormat = value;
             }
         }
 
@@ -180,7 +197,7 @@
         public void AddCustomStringFormatter<T>(Expression<Func<T, string>> toString, Expression<Func<string, T>> fromString)
         {
             this.EnsureNotReadOnly();
-            throw new NotSupportedException("This feature is coming!");
+            throw new NotImplementedException("This feature is coming!");
         }
 
         /// <summary>
@@ -192,7 +209,7 @@
         public void AddCustomNumberFormatter<T>(Expression<Func<T, decimal>> toNumber, Expression<Func<decimal, T>> fromNumber)
         {
             this.EnsureNotReadOnly();
-            throw new NotSupportedException("This feature is coming!");
+            throw new NotImplementedException("This feature is coming!");
         }
 
         /// <summary>
@@ -204,7 +221,7 @@
         public void AddCustomObjectFormatter<T>(Expression<Func<T, string>> toString, Expression<Func<string, T>> fromString)
         {
             this.EnsureNotReadOnly();
-            throw new NotSupportedException("This feature is coming!");
+            throw new NotImplementedException("This feature is coming!");
         }
 
         /// <summary>

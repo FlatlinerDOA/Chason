@@ -12,5 +12,5 @@ namespace Chason
     /// <param name="s"></param>
     /// <param name="value"></param>
     /// <returns></returns>
-    internal delegate bool TryParseDelegate<T>(string s, out T value);
+    internal delegate bool TryParseDelegate<T>(string s, out T value) where T : struct;
 }

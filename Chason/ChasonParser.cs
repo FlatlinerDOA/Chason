@@ -11,6 +11,7 @@ namespace Chason
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
     using System.Runtime.Serialization;
@@ -224,10 +225,17 @@ namespace Chason
         /// </returns>
         internal static MethodCallExpression GetParseMethodCall(Type type, ParameterExpression parserParameter)
         {
-            if (Nullable.GetUnderlyingType(type) != null)
+            var underlyingType = Nullable.GetUnderlyingType(type);
+            if (underlyingType != null)
             {
-                Expression<Func<ChasonParser, TryParseDelegate<int>, int?>> x = (p, d) => p.ParseNullable(d);
-                return Expression.Call(parserParameter, "ParseNullable", new[] { type });
+                // Convert(Call CreateDelegate(Type, null, MethodInfo))
+                var tryParseDelegateType = typeof(TryParseDelegate<>).MakeGenericType(underlyingType);
+                var methodInfo = underlyingType.GetMethods().FirstOrDefault(m => m.Name == "TryParse" && m.GetParameters().Length == 2);
+                var createDelegate = Expression.Call(typeof(Delegate), "CreateDelegate", new Type[0], Expression.Constant(tryParseDelegateType), Expression.Constant(methodInfo));
+                var convert = Expression.Convert(createDelegate, tryParseDelegateType);
+                ////var arg = Expression.Constant(Expression.Convert(, methodInfo), tryParseDelegateType);
+                Expression<Func<ChasonParser, int?>> x = p => p.ParseNullable(new TryParseDelegate<int>(int.TryParse));
+                return Expression.Call(parserParameter, "ParseNullable", new[] { underlyingType }, convert);
             }
 
             if (TypeParseMethods.ContainsKey(type))
@@ -429,7 +437,7 @@ namespace Chason
         internal DateTime ParseDateTime()
         {
             var st = this.ParseString();
-            return DateTime.Parse(st, this.settings.CultureInfo, this.settings.DateTimeStyles);
+            return DateTime.ParseExact(st, this.settings.DateTimeFormat, this.settings.CultureInfo, this.settings.DateTimeStyles);
         }
 
         /// <summary>
@@ -448,7 +456,7 @@ namespace Chason
         internal DateTimeOffset ParseDateTimeOffset()
         {
             var dt = this.ParseString();
-            return DateTimeOffset.Parse(dt, this.settings.CultureInfo, this.settings.DateTimeStyles);
+            return DateTimeOffset.ParseExact(dt, this.settings.DateTimeOffsetFormat, this.settings.CultureInfo, this.settings.DateTimeStyles);
         }
 
         /// <summary>
