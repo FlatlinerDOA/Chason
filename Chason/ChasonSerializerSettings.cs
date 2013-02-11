@@ -34,17 +34,35 @@
         private CultureInfo cultureInfo;
 
         /// <summary>
-        /// The format string for dates
+        /// The string format for dates when parsing.
         /// </summary>
         private string dateTimeFormatString;
 
+        /// <summary>
+        /// The date time styles to use when parsing.
+        /// </summary>
         private DateTimeStyles dateTimeStyles;
 
+        /// <summary>
+        /// The time span styles to use when parsing.
+        /// </summary>
         private TimeSpanStyles timeSpanStyles;
 
+        /// <summary>
+        /// The string format for parsing time spans.
+        /// </summary>
         private string timeSpanFormat;
 
+        /// <summary>
+        /// The string format for parsing date time offsets.
+        /// </summary>
         private string dateTimeOffsetFormat;
+
+        private IEqualityComparer<string> propertyNameComparer;
+
+        private string typePropertyName;
+
+        private string typeMarkerName;
 
         /// <summary>
         /// Initalizes a new instance of the <see cref="ChasonSerializerSettings"/> class.
@@ -55,10 +73,11 @@
             this.DateTimeOffsetFormat = "yyyy-MM-dd\\THH:mm:ss.ffffffzzz";
             this.CultureInfo = CultureInfo.InvariantCulture;
             this.TextEncoding = Encoding.UTF8;
-            this.KnownTypes = new List<Type>();
+            this.KnownTypes = new HashSet<Type>();
             this.TimeSpanFormat = "c";
             this.TimeSpanStyles = TimeSpanStyles.None;
             this.DateTimeStyles = DateTimeStyles.None;
+            this.PropertyNameComparer = StringComparer.Ordinal;
         }
 
         /// <summary>
@@ -68,13 +87,23 @@
         public ChasonSerializerSettings(params Type[] knownTypes)
             : this()
         {
-            this.KnownTypes = new List<Type>(knownTypes);
+            this.KnownTypes = new HashSet<Type>(knownTypes);
         }
 
         /// <summary>
         /// Gets the list of known polymorphic types that can be deserialized to.
         /// </summary>
-        public IList<Type> KnownTypes { get; private set; }
+        public HashSet<Type> KnownTypes { get; private set; }
+
+        /// <summary>
+        /// Gets the mapping from type name to strong type
+        /// </summary>
+        public IDictionary<string, Type> NameToTypeMapping { get; private set; }
+
+        /// <summary>
+        /// Gets the mapping from type to type name
+        /// </summary>
+        public IDictionary<Type, string> TypeToNameMapping { get; private set; } 
 
         /// <summary>
         /// Gets or sets the text encoding to use when working with streams (defaults to UTF8)
@@ -155,7 +184,7 @@
         }
 
         /// <summary>
-        /// Gets or sets the time span styles
+        /// Gets or sets the time span styles (defaults to <see cref="TimeSpanStyles.None"/>).
         /// </summary>
         public TimeSpanStyles TimeSpanStyles
         {
@@ -172,7 +201,7 @@
         }
 
         /// <summary>
-        /// Gets or sets the time span format
+        /// Gets or sets the time span format (defaults to 'c')
         /// </summary>
         public string TimeSpanFormat
         {
@@ -185,6 +214,40 @@
             {
                 this.EnsureNotReadOnly();
                 this.timeSpanFormat = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the string comparer to use when reading property names (defaults to <see cref="StringComparer.Ordinal"/>)
+        /// </summary>
+        public IEqualityComparer<string> PropertyNameComparer
+        {
+            get
+            {
+                return this.propertyNameComparer;
+            }
+
+            set
+            {
+                this.EnsureNotReadOnly();
+                this.propertyNameComparer = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the member in the JSON that is used to identify the type to be deserialized. (defaults to '$type')
+        /// </summary>
+        public string TypeMarkerName
+        {
+            get
+            {
+                return this.typeMarkerName;
+            }
+
+            set
+            {
+                this.EnsureNotReadOnly();
+                this.typeMarkerName = value;
             }
         }
 
