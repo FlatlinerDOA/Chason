@@ -16,16 +16,16 @@ Initial Performance Results
 ---------------------------
 |Test|Iterations|Time (ms)|Objects / sec|
 |:---|---------:|--------:|------------:|
-|SerializeChason|1,000,000|2,146|465,846.3|
-|SerializeServiceStack|1,000,000|3,333|299,974.4|
-|SerializeJsonNet|1,000,000|6,202|161,218.6|
-|SerializeFastJson|10,000|12,415|80,545.3|
-|SerializeDataContractJson|1,000,000|5,301|188,627.4|
-|DeserializeChason|1,000,000|2,435|410,542.9|
-|DeserializeServiceStack|1,000,000|3,300|302,942.9|
-|DeserializeJsonNet|1,000,000|9,370|106,723.6|
-|DeserializeFastJson|1,000,000|3,046|328,225.3|
-|DeserializeDataContractJson|1,000,000|16,141|61,950.5|
+|SerializeChason|1,000,000|2,151|464,738.2|
+|SerializeServiceStack|1,000,000|3,409|293,298.3|
+|SerializeJsonNet|1,000,000|5,995|166,780.6|
+|SerializeFastJson|10,000|12,593|79,408.6|
+|SerializeDataContractJson|1,000,000|5,285|189,183.8|
+|DeserializeChason|1,000,000|2,540|393,692.2|
+|DeserializeServiceStack|1,000,000|3,347|298,753.0|
+|DeserializeJsonNet|1,000,000|9,663|103,481.7|
+|DeserializeFastJson|1,000,000|3,119|320,532.2|
+|DeserializeDataContractJson|1,000,000|16,118|62,041.2|
 
 Note
 ----

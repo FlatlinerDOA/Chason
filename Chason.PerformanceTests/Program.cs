@@ -124,7 +124,9 @@ namespace Chason.PerformanceTests
                 var s = Stopwatch.StartNew();
                 a(count);
                 s.Stop();
-                Console.WriteLine(" {0}    {1}    ({2:0.0}/sec)", timedCall.ToString().Substring("c => ".Length).Replace("(c", "(" + count), s.ElapsedMilliseconds, count / s.Elapsed.TotalSeconds);
+                var callName = timedCall.ToString().Substring("c => ".Length);
+                callName = callName.Substring(0, callName.IndexOf("(", StringComparison.OrdinalIgnoreCase));
+                Console.WriteLine("|{0}|{1:N0}|{2:N0}|{3:N1}|", callName, count, s.ElapsedMilliseconds, count / s.Elapsed.TotalSeconds);
             }
         }
 
