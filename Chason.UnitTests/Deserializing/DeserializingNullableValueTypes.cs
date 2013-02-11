@@ -15,7 +15,7 @@ namespace Chason.UnitTests.Deserializing
     [TestClass]
     public sealed class DeserializingNullableValueTypes
     {
-        private const string JsonText = @"{""String"":""String"",""SignedInt32"":12345,""SignedInt64"":123456789,""UnsignedInt32"":123456,""UnsignedInt64"":1234567890,""Decimal"":1.23456789,""Double"":1.123,""Float"":123.45,""Single"":1.2,""DateTime"":""1997-07-16T19:20:30.456+01:00"",""DateTimeInfo"":""2013-02-07T23:33:27.4655239+11:00"",""TimeSpan"":""1.01:02:03.456"",""TimeZoneInfo"":""AUS Eastern Standard Time""}";
+        private const string JsonText = @"{""SignedInt32"":12345,""SignedInt64"":123456789,""UnsignedInt32"":123456,""UnsignedInt64"":1234567890,""Decimal"":1.23456789,""Double"":1.123,""Float"":123.45,""Single"":1.2,""DateTime"":""1997-07-16T19:20:30"",""DateTimeOffset"":""2013-02-07T23:33:27.4655239+11:00"",""TimeSpan"":""1.01:02:03.456""}";
 
         private ChasonSerializer<SupportedNullableValueTypesContract> serializer;
 

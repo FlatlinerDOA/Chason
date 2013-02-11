@@ -1,12 +1,8 @@
-﻿// --------------------------------------------------------------------------------------------------------------------
-// <copyright file="ChasonParser.cs" company="">
-//   
+﻿//--------------------------------------------------------------------------------------------------
+// <copyright file="ChasonParser.cs" company="Andrew Chisholm">
+//   Copyright (c) 2013 Andrew Chisholm All rights reserved.
 // </copyright>
-// <summary>
-//   
-// </summary>
-// --------------------------------------------------------------------------------------------------------------------
-
+//--------------------------------------------------------------------------------------------------
 namespace Chason
 {
     using System;
@@ -30,10 +26,33 @@ namespace Chason
         /// </summary>
         internal static readonly Dictionary<Type, string> ListParseMethods = new Dictionary<Type, string> 
         {
-            { typeof(IList<string>), "ParseStringList" }, 
-            { typeof(IList<int>), "ParseInt32List" }, 
-            { typeof(IList<long>), "ParseInt64List" }, 
-            { typeof(IList<decimal>), "ParseDecimalList" }
+            { typeof(ICollection<string>), "ParseStringList" }, 
+            { typeof(ICollection<int>), "ParseInt32List" }, 
+            { typeof(ICollection<long>), "ParseInt64List" }, 
+            { typeof(ICollection<decimal>), "ParseDecimalList" }
+        };
+
+        private static readonly Type[] StringTypes = new[]
+        {
+            typeof(char),
+            typeof(string),
+            typeof(DateTime),
+            typeof(DateTimeOffset),
+            typeof(Enum),
+            typeof(TimeSpan)
+        };
+
+        private static readonly Type[] NumberTypes = new[]
+        {
+            typeof(short),
+            typeof(int),
+            typeof(long),
+            typeof(ushort),
+            typeof(uint),
+            typeof(ulong),
+            typeof(float),
+            typeof(double),
+            typeof(decimal)
         };
 
         /// <summary>
@@ -199,13 +218,20 @@ namespace Chason
             if (typeof(T).IsGenericType)
             {
                 var generic = typeof(T).GetGenericTypeDefinition();
-                if (typeof(IList<>).IsAssignableFrom(generic))
+                if (typeof(ICollection<>).IsAssignableFrom(generic))
                 {
                     var itemType = typeof(T).GetGenericArguments()[0];
-                    var m = this.GetType().GetMethod(itemType.IsClass ? "ParseObjectArray" : "TODO");
+                    var m = this.GetType().GetMethod("ParseCollection");
                     var arrayParse = m.MakeGenericMethod(typeof(T), itemType);
                     return (T)arrayParse.Invoke(this, new object[0]);
                 }
+            } 
+            else if (typeof(T).IsArray)
+            {
+                var itemType = typeof(T).GetElementType();
+                var m = this.GetType().GetMethod("ParseArray");
+                var arrayParse = m.MakeGenericMethod(typeof(T), itemType);
+                return (T)arrayParse.Invoke(this, new object[0]);
             }
 
             return this.ParseObject<T>();
@@ -225,6 +251,11 @@ namespace Chason
         /// </returns>
         internal static MethodCallExpression GetParseMethodCall(Type type, ParameterExpression parserParameter)
         {
+            if (TypeParseMethods.ContainsKey(type))
+            {
+                return Expression.Call(parserParameter, TypeParseMethods[type], new Type[0]);
+            }
+
             var underlyingType = Nullable.GetUnderlyingType(type);
             if (underlyingType != null)
             {
@@ -233,23 +264,25 @@ namespace Chason
                 var methodInfo = underlyingType.GetMethods().FirstOrDefault(m => m.Name == "TryParse" && m.GetParameters().Length == 2);
                 var createDelegate = Expression.Call(typeof(Delegate), "CreateDelegate", new Type[0], Expression.Constant(tryParseDelegateType), Expression.Constant(methodInfo));
                 var convert = Expression.Convert(createDelegate, tryParseDelegateType);
-                ////var arg = Expression.Constant(Expression.Convert(, methodInfo), tryParseDelegateType);
-                Expression<Func<ChasonParser, int?>> x = p => p.ParseNullable(new TryParseDelegate<int>(int.TryParse));
-                return Expression.Call(parserParameter, "ParseNullable", new[] { underlyingType }, convert);
+                return Expression.Call(parserParameter, NumberTypes.Contains(underlyingType) ? "ParseNullableNumber" : "ParseNullableString", new[] { underlyingType }, convert);
             }
-
-            if (TypeParseMethods.ContainsKey(type))
-            {
-                return Expression.Call(parserParameter, TypeParseMethods[type], new Type[0]);
-            }
-
+            
             if (type.IsGenericType)
             {
                 var generic = type.GetGenericTypeDefinition();
-                if (typeof(IList<>).IsAssignableFrom(generic))
+                if (typeof(ICollection<>).IsAssignableFrom(generic))
                 {
-                    return Expression.Call(parserParameter, "ParseList", new[] { type });
+                    return Expression.Call(parserParameter, "ParseCollection", new[] { type });
                 }
+                else
+                {
+                    // TODO: Figure out single value generics e.g. KeyValuePair<,> Tuple<,> etc.
+                }
+            } 
+            else if (type.IsArray)
+            {
+                var elementType = type.GetElementType();
+                return Expression.Call(parserParameter, "ParseArray", new[] { elementType });
             }
 
             return Expression.Call(parserParameter, "ParseObject", new[] { type });
@@ -265,7 +298,7 @@ namespace Chason
         /// </returns>
         internal T[] ParseArray<T>(Func<T> parse)
         {
-            return this.ParseList<List<T>, T>(parse).ToArray();
+            return this.ParseCollection<List<T>, T>(parse).ToArray();
         }
 
         /// <summary>
@@ -517,7 +550,7 @@ namespace Chason
         /// </typeparam>
         /// <returns>
         /// </returns>
-        internal TList ParseList<TList, TItem>(Func<TItem> parse) where TList : IList<TItem>
+        internal TList ParseCollection<TList, TItem>(Func<TItem> parse) where TList : ICollection<TItem>
         {
             var array = PropertyParseList<TList>.Instance.New();
             this.ConsumeToken(); // [
@@ -549,16 +582,41 @@ namespace Chason
         /// </typeparam>
         /// <returns>
         /// </returns>
-        internal T? ParseNullable<T>(TryParseDelegate<T> tryParseMethod) where T : struct
+        internal T? ParseNullableNumber<T>(TryParseDelegate<T> tryParseMethod) where T : struct
         {
-            var s = this.ParseString();
-            if (s == null)
+            var text = this.ParseNumber();
+            if (text == null)
             {
                 return null;
             }
 
             T output;
-            if (tryParseMethod(s, out output))
+            if (tryParseMethod(text, out output))
+            {
+                return output;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// </summary>
+        /// <param name="tryParseMethod">
+        /// </param>
+        /// <typeparam name="T">
+        /// </typeparam>
+        /// <returns>
+        /// </returns>
+        internal T? ParseNullableString<T>(TryParseDelegate<T> tryParseMethod) where T : struct
+        {
+            var text = this.ParseString();
+            if (text == null)
+            {
+                return null;
+            }
+
+            T output;
+            if (tryParseMethod(text, out output))
             {
                 return output;
             }
