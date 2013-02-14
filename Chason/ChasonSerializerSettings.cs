@@ -99,13 +99,20 @@ namespace Chason
         /// </summary>
         private Func<string, Type> typeResolver;
 
+        private readonly Dictionary<string, Type> nameToTypeMapping = new Dictionary<string, Type>();
+        
+        private readonly Dictionary<Type, string> typeToNameMapping = new Dictionary<Type, string>();
+
+        
         /// <summary>
         /// Initalizes a new instance of the <see cref="ChasonSerializerSettings"/> class.
         /// </summary>
         public ChasonSerializerSettings()
         {
-            this.NameToTypeMapping = new Dictionary<string, Type>();
-            this.TypeToNameMapping = new Dictionary<Type, string>();
+            this.TypeNameResolver = type => this.typeToNameMapping[type];
+            this.TypeResolver = typeName => this.nameToTypeMapping[typeName];
+            this.CustomReaders = new Dictionary<Type, Expression>();
+            this.CustomWriters = new Dictionary<Type, Expression>();
             this.DateTimeFormat = DefaultDateTimeFormat;
             this.DateTimeOffsetFormat = DefaultDateTimeOffsetFormat;
             this.CultureInfo = CultureInfo.InvariantCulture;
@@ -134,8 +141,10 @@ namespace Chason
         /// <param name="serializerSettings">The settings to clone</param>
         public ChasonSerializerSettings(ChasonSerializerSettings serializerSettings)
         {
-            this.NameToTypeMapping = new Dictionary<string, Type>(serializerSettings.NameToTypeMapping);
-            this.TypeToNameMapping = new Dictionary<Type, string>(serializerSettings.TypeToNameMapping);
+            this.typeNameResolver = serializerSettings.typeNameResolver;
+            this.typeResolver = serializerSettings.typeResolver;
+            this.nameToTypeMapping = new Dictionary<string, Type>(serializerSettings.nameToTypeMapping);
+            this.typeToNameMapping = new Dictionary<Type, string>(serializerSettings.typeToNameMapping);
             this.KnownTypes = new HashSet<Type>(serializerSettings.KnownTypes);
             this.timeSpanFormat = serializerSettings.TimeSpanFormat;
             this.cultureInfo = serializerSettings.CultureInfo;
@@ -144,6 +153,8 @@ namespace Chason
             this.timeSpanStyles = serializerSettings.TimeSpanStyles;
             this.dateTimeStyles = serializerSettings.DateTimeStyles;
             this.propertyNameComparer = serializerSettings.PropertyNameComparer;
+            this.CustomWriters = new Dictionary<Type, Expression>(serializerSettings.CustomWriters);
+            this.CustomReaders = new Dictionary<Type, Expression>(serializerSettings.CustomReaders);
         }
 
         /// <summary>
@@ -408,6 +419,12 @@ namespace Chason
             {
                 this.readOnly = true;
                 this.KnownTypes = new ReadOnlyHashSet<Type>(this.KnownTypes);
+                foreach (var knownType in this.KnownTypes)
+                {
+                    var name = ChasonSerializer.GetDataContractFullName(knownType);
+                    this.typeToNameMapping[knownType] = name;
+                    this.nameToTypeMapping[name] = knownType;
+                }
             }
         }
 

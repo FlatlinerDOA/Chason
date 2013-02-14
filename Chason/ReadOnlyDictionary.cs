@@ -12,6 +12,8 @@
         {
             var readOnly = dictionary as ReadOnlyDictionary<TKey, TValue>;
             this.dictionary = readOnly != null ? readOnly.dictionary : dictionary;
+            this.Keys = dictionary.Keys;
+            this.Values = dictionary.Values;
         }
 
         public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
@@ -66,7 +68,7 @@
 
         public bool ContainsKey(TKey key)
         {
-            throw new NotImplementedException();
+            return this.dictionary.ContainsKey(key);
         }
 
         public bool Remove(TKey key)
@@ -76,14 +78,14 @@
 
         public bool TryGetValue(TKey key, out TValue value)
         {
-            throw new NotImplementedException();
+            return this.dictionary.TryGetValue(key, out value);
         }
 
         public TValue this[TKey key]
         {
             get
             {
-                throw new NotImplementedException();
+                return this.dictionary[key];
             }
             set
             {

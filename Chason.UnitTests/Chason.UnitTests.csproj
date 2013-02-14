@@ -64,7 +64,9 @@
     <Compile Include="Deserializing\DeserializingValueTypes.cs" />
     <Compile Include="Deserializing\DeserializingNullableValueTypes.cs" />
     <Compile Include="Deserializing\DeserializingASimpleJsonString.cs" />
-    <Compile Include="Serializing\WritingEscapedStrings.cs" />
+    <Compile Include="Serializing\Formatting\PropertyNameFormatting.cs" />
+    <Compile Include="Serializing\SerializingArrays.cs" />
+    <Compile Include="Serializing\Formatting\WritingEscapedStrings.cs" />
     <Compile Include="TestDataContract.cs" />
     <Compile Include="Serializing\SerializingADataContractClass.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

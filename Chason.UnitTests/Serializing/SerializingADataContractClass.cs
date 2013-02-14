@@ -13,7 +13,7 @@ namespace Chason.UnitTests.Serializing
     public class SerializingADataContractClass
     {
         private readonly TestDataContract test = new TestDataContract { FirstString = "First \"String\" ", SecondString = "Second \\ 'String' ", FirstInt = 1,  };
-        //FirstDate = new DateTime(2000, 1, 1), SecondDate = new DateTime(2001, 1, 1)
+
         private readonly MemoryStream result = new MemoryStream();
 
         private ChasonSerializer<TestDataContract> serializer;

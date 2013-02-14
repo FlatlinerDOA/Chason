@@ -3,9 +3,8 @@
 //   Copyright (c) 2013 Andrew Chisholm All rights reserved.
 // </copyright>
 //--------------------------------------------------------------------------------------------------
-namespace Chason.UnitTests.Serializing
+namespace Chason.UnitTests.Serializing.Formatting
 {
-    using System;
     using System.Runtime.Serialization;
 
     using FluentAssertions;

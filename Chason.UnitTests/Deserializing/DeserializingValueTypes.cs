@@ -15,14 +15,11 @@ namespace Chason.UnitTests.Deserializing
     [TestClass]
     public sealed class DeserializingValueTypes
     {
-        //,""TimeZoneInfo"":""AUS Eastern Standard Time""
         private const string JsonText = @"{""String"":""String"",""SignedInt16"":255,""SignedInt32"":12345,""SignedInt64"":123456789,""UnsignedInt16"":1255,""UnsignedInt32"":123456,""UnsignedInt64"":1234567890,""Decimal"":1.23456789,""Double"":1.123456,""Float"":123.45,""DateTime"":""1997-07-16T19:20:30"",""DateTimeOffset"":""2013-02-07T23:33:27.988000+08:00"",""TimeSpan"":""1.02:03:04.567""}";
 
         private SupportedValueTypesContract result;
 
         private ChasonSerializer<SupportedValueTypesContract> serializer;
-
-        private TimeZoneInfo expectedTimeZone;
 
         [DataContract]
         public sealed class SupportedValueTypesContract
@@ -73,7 +70,6 @@ namespace Chason.UnitTests.Deserializing
         [TestInitialize]
         public void InitializeTest()
         {
-            this.expectedTimeZone = TimeZoneInfo.FindSystemTimeZoneById("AUS Eastern Standard Time");
             this.serializer = new ChasonSerializer<SupportedValueTypesContract>();
             this.result = this.serializer.Deserialize(JsonText);
         }
@@ -155,11 +151,5 @@ namespace Chason.UnitTests.Deserializing
         {
             this.result.TimeSpan.Should().Be(new TimeSpan(1, 2, 3, 4, 567));
         }
-
-        ////[TestMethod]
-        ////public void TheTimeZoneInfoIsDeserializedToTheCorrectTimeZone()
-        ////{
-        ////    this.result.TimeZoneInfo.Should().Be(this.expectedTimeZone);
-        ////}
-    }
+      }
 }
