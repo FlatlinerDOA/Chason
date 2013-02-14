@@ -28,77 +28,33 @@ namespace Chason
         /// </summary>
         public static readonly char[] CharsToEscape = new[] { '"', '\\', '\r', '\n', '\t', '/', '\b', '\f' };
 
-        #endregion
-    }
-
-    /// <summary>
-    /// A fast and lightweight strongly typed JSON serializer.
-    /// </summary>
-    /// <typeparam name="T">
-    /// The data contract or object primitive type to be serialized and deserialized.
-    /// </typeparam>
-    public sealed class ChasonSerializer<T>
-        where T : new()
-    {
-
-        #region Fields
-
-        /// <summary>
-        /// The text encoding to use when reading and writing to streams.
-        /// </summary>
-        private readonly Encoding encoding;
-
-        /// <summary>
-        /// The serialize method
-        /// </summary>
-        private readonly Action<T, TextWriter> serializeMethod;
-
-        /// <summary>
-        /// The serializer settings
-        /// </summary>
-        private readonly ChasonSerializerSettings settings;
-
         /// <summary>
         /// A cache to the method to write with
         /// </summary>
-        private readonly MethodInfo writeStringMethod;
+        internal static readonly MethodInfo WriteStringMethod = typeof(TextWriter).GetMethod("Write", new[] { typeof(string) });
 
         /// <summary>
-        /// The culture to use
+        /// 
         /// </summary>
-        private CultureInfo culture;
+        internal static readonly HashSet<Type> ObjectAsStringTypes = new HashSet<Type> 
+                                                                         {
+                                                                             typeof(DateTime),
+                                                                             typeof(DateTimeOffset),
+                                                                             typeof(TimeSpan),
+                                                                             typeof(TimeZoneInfo)
+                                                                         };
+
+        internal static readonly HashSet<Type> LiteralTypes = new HashSet<Type>
+                                                                  {
+                                                                      typeof(int), 
+                                                                      typeof(long), 
+                                                                      typeof(uint), 
+                                                                      typeof(ulong), 
+                                                                      typeof(decimal)
+                                                                  };
+
 
         #endregion
-
-        #region Constructors and Destructors
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ChasonSerializer{T}"/> class.
-        /// </summary>
-        public ChasonSerializer()
-            : this(ChasonSerializerSettings.Default)
-        {
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ChasonSerializer{T}"/> class.
-        /// </summary>
-        /// <param name="settings">
-        /// The settings to use for serialization and deserialization
-        /// </param>
-        public ChasonSerializer(ChasonSerializerSettings settings)
-        {
-            settings.Lock();
-            this.settings = settings;
-            this.encoding = settings.TextEncoding;
-            this.culture = settings.CultureInfo;
-            this.writeStringMethod = typeof(TextWriter).GetMethod("Write", new[] { typeof(string) });
-            this.serializeMethod = this.WriteObjectBlock().Compile();
-        }
-
-        #endregion
-
-        #region Public Methods and Operators
 
         /// <summary>
         /// </summary>
@@ -116,7 +72,7 @@ namespace Chason
             var sb = new StringBuilder();
             sb.Append('"');
             int lastIndex = 0;
-            int index = input.IndexOfAny(ChasonSerializer.CharsToEscape);
+            int index = input.IndexOfAny(CharsToEscape);
             if (index == -1)
             {
                 sb.Append(input);
@@ -162,7 +118,7 @@ namespace Chason
 
                     index++;
                     lastIndex = index;
-                    index = input.IndexOfAny(ChasonSerializer.CharsToEscape, index);
+                    index = input.IndexOfAny(CharsToEscape, index);
                 }
 
                 sb.Append(input, lastIndex, input.Length - lastIndex);
@@ -171,6 +127,58 @@ namespace Chason
             sb.Append('"');
             return sb.ToString();
         }
+    }
+
+    /// <summary>
+    /// A fast and lightweight strongly typed JSON serializer.
+    /// </summary>
+    /// <typeparam name="T">
+    /// The data contract or object primitive type to be serialized and deserialized.
+    /// </typeparam>
+    public sealed class ChasonSerializer<T>
+        where T : new()
+    {
+
+        #region Fields
+
+        /// <summary>
+        /// The serialize method
+        /// </summary>
+        private readonly Action<T, TextWriter> serializeMethod;
+
+        /// <summary>
+        /// The serializer settings
+        /// </summary>
+        private readonly ChasonSerializerSettings settings;
+
+        #endregion
+
+        #region Constructors and Destructors
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ChasonSerializer{T}"/> class.
+        /// </summary>
+        public ChasonSerializer()
+            : this(ChasonSerializerSettings.Default)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ChasonSerializer{T}"/> class.
+        /// </summary>
+        /// <param name="settings">
+        /// The settings to use for serialization and deserialization
+        /// </param>
+        public ChasonSerializer(ChasonSerializerSettings settings)
+        {
+            settings.Lock();
+            this.settings = settings;
+            this.serializeMethod = this.WriteObjectBlock().Compile();
+        }
+
+        #endregion
+
+        #region Public Methods and Operators
 
         /// <summary>
         /// Deserializes 
@@ -193,7 +201,7 @@ namespace Chason
         /// </returns>
         public T Deserialize(Stream source)
         {
-            using (var r = new StreamReader(source, this.encoding))
+            using (var r = new StreamReader(source, this.settings.TextEncoding))
             {
                 var p = new ChasonParser(r.ReadToEnd(), this.settings);
                 return p.Parse<T>();
@@ -209,7 +217,7 @@ namespace Chason
         /// </param>
         public void Serialize(T data, Stream target)
         {
-            var b = new StreamWriter(target, this.encoding);
+            var b = new StreamWriter(target, this.settings.TextEncoding);
             this.serializeMethod(data, b);
             b.Flush();
         }
@@ -258,7 +266,7 @@ namespace Chason
         /// </returns>
         private Expression WriteConstant(string constant, ParameterExpression writer)
         {
-            return Expression.Call(writer, this.writeStringMethod, Expression.Constant(constant));
+            return Expression.Call(writer, ChasonSerializer.WriteStringMethod, new Expression[] { Expression.Constant(constant) });
         }
 
         /// <summary>
@@ -288,7 +296,7 @@ namespace Chason
         /// </returns>
         private IEnumerable<Expression> WriteObject(ParameterExpression instance, ParameterExpression writer)
         {
-            return WriteObject(typeof(T), instance, writer);
+            return this.WriteObject(typeof(T), instance, writer);
         }
 
         private IEnumerable<Expression> WriteObject(Type objectType, ParameterExpression instance, ParameterExpression writer)
@@ -299,16 +307,6 @@ namespace Chason
                where c != null
                orderby c.Name ?? p.Name, c.Order
                select new { Property = p, Contract = c };
-
-            var literalTypes = new HashSet<Type> { typeof(int), typeof(long), typeof(uint), typeof(ulong), typeof(decimal) };
-
-            var objectAsStringTypes = new HashSet<Type> 
-            {
-                typeof(DateTime),
-                typeof(DateTimeOffset),
-                typeof(TimeSpan),
-                typeof(TimeZoneInfo)
-            };
 
             bool first = true;
             yield return this.WriteConstant("{", writer);
@@ -321,13 +319,17 @@ namespace Chason
                 {
                     yield return this.WriteString(m.Property, instance, writer);
                 }
-                else if (literalTypes.Contains(type))
+                else if (ChasonSerializer.LiteralTypes.Contains(type))
                 {
                     yield return this.WriteLiteral(m.Property, instance, writer);
                 }
-                else if (objectAsStringTypes.Contains(type))
+                else if (ChasonSerializer.ObjectAsStringTypes.Contains(type))
                 {
                     yield return this.WriteObjectAsString(m.Property, instance, writer);
+                }
+                else if (this.settings.CustomWriters.ContainsKey(type))
+                {
+                    yield return this.settings.CustomWriters[type];
                 }
                 else
                 {
@@ -368,7 +370,7 @@ namespace Chason
             var toString = Expression.Call(getterCall, toStringMethodName, new Type[0], arguments);
 
             // TODO: Figure out if we need to escape these values i.e call EscapeString method?
-            return Expression.Call(writer, this.writeStringMethod, new Expression[] { toString });
+            return Expression.Call(writer, ChasonSerializer.WriteStringMethod, new Expression[] { toString });
         }
 
         /// <summary>
@@ -384,6 +386,7 @@ namespace Chason
         }
 
         /// <summary>
+        /// Creates an expression that when called will output the property name
         /// </summary>
         /// <param name="property">
         /// </param>
@@ -402,8 +405,7 @@ namespace Chason
                              ? "\"" + (contract.Name ?? property.Name) + "\":"
                              : ",\"" + (contract.Name ?? property.Name) + "\":";
 
-            ////var buffer = this.encoding.GetBytes(start);
-            return Expression.Call(writer, this.writeStringMethod, Expression.Constant(buffer));
+            return Expression.Call(writer, ChasonSerializer.WriteStringMethod, new Expression[] { Expression.Constant(buffer) });
         }
 
         /// <summary>
@@ -419,9 +421,9 @@ namespace Chason
         private Expression WriteString(PropertyInfo property, ParameterExpression instance, ParameterExpression writer)
         {
             var getterCall = Expression.Property(instance, property);
-            var replaceMethod = this.GetType().GetMethod("EscapeString", new[] { typeof(string) });
+            var replaceMethod = typeof(ChasonSerializer).GetMethod("EscapeString", new[] { typeof(string) });
             var replaceCall = Expression.Call(null, replaceMethod, new Expression[] { getterCall });
-            return Expression.Call(writer, this.writeStringMethod, new Expression[] { replaceCall });
+            return Expression.Call(writer, ChasonSerializer.WriteStringMethod, new Expression[] { replaceCall });
         }
 
         #endregion
