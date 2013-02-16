@@ -246,7 +246,10 @@ namespace Chason
             var elementType = property.PropertyType.GetElementType();
             var enumerableType = typeof(IEnumerable<>).MakeGenericType(elementType);
             var getterCall = Expression.Property(instance, property);
-            var writeValues = Expression.Call(this.GetType(), "WriteArrayValues", new[] { property.PropertyType }, 
+            var writeMethod = this.GetType().GetMethod("WriteArrayValues", BindingFlags.Public | BindingFlags.Static).MakeGenericMethod(elementType);
+            var writeValues = Expression.Call(
+                null, 
+                writeMethod, 
                 new Expression[]
                 {
                     Expression.Convert(getterCall, enumerableType),
@@ -265,9 +268,20 @@ namespace Chason
             }
 
             writer.Write("[");
+            bool first = true;
             foreach (var value in values)
             {
-                if (typeof(TValue) == typeof(string))
+                if (!first)
+                {
+                    writer.Write(",");
+                }
+
+                first = false;
+                if (ReferenceEquals(value, null))
+                {
+                    writer.Write("null");
+                }
+                else if (typeof(TValue) == typeof(string))
                 {
                     writer.Write(ChasonSerializer.EscapeString(value.ToString()));
                 }
