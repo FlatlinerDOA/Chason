@@ -52,6 +52,16 @@ namespace Chason
 
         #endregion
 
+        public static string EscapeObjectString(object input)
+        {
+            if (ReferenceEquals(input, null))
+            {
+                return "null";
+            }
+
+            return EscapeString(input.ToString());
+        }
+
         /// <summary>
         /// </summary>
         /// <param name="input">
@@ -186,6 +196,16 @@ namespace Chason
 
             sb.Append(((DataContractAttribute)att[0]).Name);
             return sb.ToString();
+        }
+
+        public static string SerializeToString<T>(T data)
+        {
+            return ChasonSerializer<T>.Instance.Serialize(data);
+        }
+
+        public static T DeserializeFromString<T>(string json)
+        {
+            return ChasonSerializer<T>.Instance.Deserialize(json);
         }
     }
 }

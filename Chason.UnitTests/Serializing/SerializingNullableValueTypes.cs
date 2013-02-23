@@ -1,9 +1,9 @@
 ﻿//--------------------------------------------------------------------------------------------------
-// <copyright file="DeserializingNullableValueTypes.cs" company="Andrew Chisholm">
+// <copyright file="SerializingNullableValueTypes.cs" company="Andrew Chisholm">
 //   Copyright (c) 2013 Andrew Chisholm All rights reserved.
 // </copyright>
 //--------------------------------------------------------------------------------------------------
-namespace Chason.UnitTests.Deserializing
+namespace Chason.UnitTests.Serializing
 {
     using System;
     using System.Runtime.Serialization;
@@ -13,13 +13,25 @@ namespace Chason.UnitTests.Deserializing
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
-    public sealed class DeserializingNullableValueTypes
+    public sealed class SerializingNullableValueTypes
     {
-        private const string JsonText = @"{""SignedInt32"":12345,""SignedInt64"":123456789,""UnsignedInt32"":123456,""UnsignedInt64"":1234567890,""Decimal"":1.23456789,""Double"":1.123,""Float"":123.45,""Single"":1.2,""DateTime"":""1997-07-16T19:20:30"",""DateTimeOffset"":""2013-02-07T23:33:27.4655239+11:00"",""TimeSpan"":""1.01:02:03.456""}";
+        private readonly SupportedNullableValueTypesContract Data = new SupportedNullableValueTypesContract()
+                                                                        {
+                                                                            SignedInt32 = 12345, 
+                                                                            SignedInt64 = 123456789, 
+                                                                            UnsignedInt32 = 123456, 
+                                                                            UnsignedInt64 = 1234567890, 
+                                                                            Decimal = 1.23456789M, 
+                                                                            Double = 1.123D, 
+                                                                            Float = 123.45f, 
+                                                                            DateTime = new DateTime(1997, 07, 16, 19, 20, 30, DateTimeKind.Unspecified), 
+                                                                            DateTimeOffset = new DateTimeOffset(2013, 02, 07, 23, 33, 27, 465, new TimeSpan(0,11,0,0)), 
+                                                                            TimeSpan= new TimeSpan(1, 1, 2, 3, 456)
+                                                                        };
 
         private ChasonSerializer<SupportedNullableValueTypesContract> serializer;
 
-        private SupportedNullableValueTypesContract result;
+        private string result;
 
         [DataContract]
         public sealed class SupportedNullableValueTypesContract
@@ -46,9 +58,6 @@ namespace Chason.UnitTests.Deserializing
             public float? Float { get; set; }
 
             [DataMember]
-            public Single? Single { get; set; }
-
-            [DataMember]
             public DateTime? DateTime { get; set; }
 
             [DataMember]
@@ -62,56 +71,48 @@ namespace Chason.UnitTests.Deserializing
         public void InitializeTest()
         {
             this.serializer = new ChasonSerializer<SupportedNullableValueTypesContract>();
-            this.result = this.serializer.Deserialize(JsonText);
+            this.result = this.serializer.Serialize(Data);
         }
 
         [TestMethod]
-        public void TheNullableSignedInt32IsDeserialized()
+        public void TheNullableSignedInt32IsSerialized()
         {
-            this.result.SignedInt32.HasValue.Should().Be(true);
-            this.result.SignedInt32.Value.Should().Be(12345);
+            this.result.Should().Contain("\"SignedInt32\":12345");
         }
 
         [TestMethod]
-        public void TheNullableSignedInt64IsDeserialized()
+        public void TheNullableSignedInt64IsSerialized()
         {
-            this.result.SignedInt64.HasValue.Should().Be(true);
-            this.result.SignedInt64.Value.Should().Be(123456789);
+            this.result.Should().Contain("\"SignedInt64\":123456789");
         }
 
         [TestMethod]
-        public void TheNullableUnsignedInt32IsDeserialized()
+        public void TheNullableUnsignedInt32IsSerialized()
         {
-            this.result.UnsignedInt32.HasValue.Should().Be(true);
-            this.result.UnsignedInt32.Value.Should().Be(123456);
-        }
-
-
-        [TestMethod]
-        public void TheNullableUnsignedInt64IsDeserialized()
-        {
-            this.result.UnsignedInt64.HasValue.Should().Be(true);
-            this.result.UnsignedInt64.Value.Should().Be(1234567890);
+            this.result.Should().Contain("\"UnsignedInt32\":123456");
         }
 
         [TestMethod]
-        public void TheNullableDecimalIsDeserialized()
+        public void TheNullableUnsignedInt64IsSerialized()
         {
-            this.result.Decimal.HasValue.Should().Be(true);
-            this.result.Decimal.Value.Should().Be(1.23456789M);
+            this.result.Should().Contain("\"UnsignedInt64\":1234567890");
         }
 
         [TestMethod]
-        public void TheNullableDateTimeIsDeserialized()
+        public void TheNullableDecimalIsSerialized()
         {
-            this.result.DateTime.HasValue.Should().Be(true);
-            this.result.DateTime.Value.Should().Be(new DateTime(1997, 07, 16, 19, 20, 30, DateTimeKind.Unspecified));
+            this.result.Should().Contain("\"Decimal\":1.23456789");
         }
 
+        [TestMethod]
+        public void TheNullableDateTimeIsSerializedInISO8601Format()
+        {
+            this.result.Should().Contain("\"DateTime\":\"1997-07-16T19:20:30\"");
+        }
     }
 
      [TestClass]
-    public sealed class DeserializingNullableValueTypesWithNulls
+    public sealed class SerializingNullableValueTypesWithNulls
     {
         private const string JsonText = @"{""SignedInt32"":null,""SignedInt64"":null,""UnsignedInt32"":null,""UnsignedInt64"":null,""Decimal"":null,""Double"":null,""Float"":null,""Single"":null,""DateTime"":null,""DateTimeOffset"":null,""TimeSpan"":null}";
 

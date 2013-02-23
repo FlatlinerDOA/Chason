@@ -780,6 +780,7 @@ namespace Chason
         /// </exception>
         private string ParseNumber()
         {
+            this.LookAhead();
             this.ConsumeToken();
 
             // Need to start back one place because the first digit is also a token and would have been consumed
@@ -849,7 +850,6 @@ namespace Chason
                                 throw new SerializationException("Expected colon at index " + this.index);
                             }
 
-                            this.LookAhead();
                             instanceParser.Parse(this, instance, name);
 
                             //// value
@@ -898,8 +898,13 @@ namespace Chason
         /// </exception>
         private string ParseString()
         {
-            this.ConsumeToken(); // "
+            if (this.LookAhead() == Token.Null)
+            {
+                this.ConsumeToken(); // null
+                return null;
+            }
 
+            this.ConsumeToken(); // "
             this.s.Length = 0;
 
             int runIndex = -1;

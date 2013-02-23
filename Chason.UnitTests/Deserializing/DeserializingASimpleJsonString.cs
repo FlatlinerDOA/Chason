@@ -5,6 +5,8 @@
 //--------------------------------------------------------------------------------------------------
 namespace Chason.UnitTests.Deserializing
 {
+    using System;
+
     using FluentAssertions;
 
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -39,6 +41,13 @@ namespace Chason.UnitTests.Deserializing
         public void TheResultFirstIntIsLoaded()
         {
             this.result.FirstInt.Should().Be(34);
+        }
+
+
+        [TestMethod]
+        public void DeserializingLastStringAsNull()
+        {
+            this.parser.Deserialize(@"{""FirstString"":""A"",""FirstInt"":34,""SecondString"":null}").SecondString.Should().BeNull();
         }
     }
 }

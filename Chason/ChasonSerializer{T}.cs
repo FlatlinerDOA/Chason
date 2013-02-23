@@ -21,8 +21,9 @@ namespace Chason
     /// The data contract or object primitive type to be serialized and deserialized.
     /// </typeparam>
     public sealed class ChasonSerializer<T>
-        where T : new()
     {
+        internal static readonly ChasonSerializer<T> Instance = new ChasonSerializer<T>(); 
+        
         #region Fields
 
         /// <summary>
@@ -234,9 +235,17 @@ namespace Chason
             }
             else
             {
-                foreach (var ex in this.WriteObject(property.PropertyType, instance, writer))
+                var elementType = Nullable.GetUnderlyingType(type);
+                if (elementType != null)
                 {
-                    yield return ex;
+                    yield return this.WriteNullableObjectAsString(property, instance, writer);
+                }
+                else
+                {
+                    foreach (var ex in this.WriteObject(property.PropertyType, instance, writer))
+                    {
+                        yield return ex;
+                    }
                 }
             }
         }
@@ -308,6 +317,33 @@ namespace Chason
         /// </param>
         /// <returns>
         /// </returns>
+        private Expression WriteNullableObjectAsString(
+            PropertyInfo property,
+            ParameterExpression instance,
+            ParameterExpression writer,
+            string toStringMethodName = "ToString",
+            params Expression[] arguments)
+        {
+            var getterCall = Expression.Property(instance, property);
+            var toString = Expression.Call(getterCall, toStringMethodName, new Type[0], arguments);
+            var coalesce = Expression.Condition(Expression.Equal(getterCall, Expression.Constant(null)), toString, Expression.Constant("null"));
+            // TODO: Figure out if we need to escape these values i.e call EscapeString method?
+            return Expression.Call(writer, ChasonSerializer.WriteStringMethod, new Expression[] { coalesce });
+        }
+        /// <summary>
+        /// </summary>
+        /// <param name="property">
+        /// </param>
+        /// <param name="instance">
+        /// </param>
+        /// <param name="writer">
+        /// </param>
+        /// <param name="toStringMethodName">
+        /// </param>
+        /// <param name="arguments">
+        /// </param>
+        /// <returns>
+        /// </returns>
         private Expression WriteObjectAsString(
             PropertyInfo property, 
             ParameterExpression instance, 
@@ -315,9 +351,9 @@ namespace Chason
             string toStringMethodName = "ToString", 
             params Expression[] arguments)
         {
-            var getterCall = Expression.Property(instance, property, arguments);
+            var getterCall = Expression.Property(instance, property);
             var toString = Expression.Call(getterCall, toStringMethodName, new Type[0], arguments);
-
+            
             // TODO: Figure out if we need to escape these values i.e call EscapeString method?
             return Expression.Call(writer, ChasonSerializer.WriteStringMethod, new Expression[] { toString });
         }
@@ -370,9 +406,9 @@ namespace Chason
         private Expression WriteString(PropertyInfo property, ParameterExpression instance, ParameterExpression writer)
         {
             var getterCall = Expression.Property(instance, property);
-            var replaceMethod = typeof(ChasonSerializer).GetMethod("EscapeString", new[] { typeof(string) });
-            var replaceCall = Expression.Call(null, replaceMethod, new Expression[] { getterCall });
-            return Expression.Call(writer, ChasonSerializer.WriteStringMethod, new Expression[] { replaceCall });
+            var escapeMethod = typeof(ChasonSerializer).GetMethod("EscapeString", new[] { typeof(string) });
+            var escapeCall = Expression.Call(null, escapeMethod, new Expression[] { getterCall });
+            return Expression.Call(writer, ChasonSerializer.WriteStringMethod, new Expression[] { escapeCall });
         }
 
         #endregion
