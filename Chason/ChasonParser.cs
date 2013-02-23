@@ -252,7 +252,7 @@ namespace Chason
         /// </param>
         /// <returns>
         /// </returns>
-        internal static MethodCallExpression GetParseMethodCall(Type type, ParameterExpression parserParameter)
+        internal static Expression GetParseMethodCall(Type type, ParameterExpression parserParameter)
         {
             if (TypeParseMethods.ContainsKey(type))
             {
@@ -266,14 +266,33 @@ namespace Chason
                 {
                     return Expression.Call(parserParameter, "ParseNullableBoolean", new Type[0]);
                 }
+                
+                var parseMethod = underlyingType.GetMethods().First(m => m.Name == "Parse" && m.GetParameters().Length == 1);
+                ////var textParameter = Expression.Parameter(typeof(string), "text");
+                var textVariable = Expression.Variable(typeof(string));
+                var parseCall = Expression.Convert(Expression.Call(parseMethod, textVariable), type);
+                var assignToParseNumber = Expression.Assign(textVariable, Expression.Call(parserParameter, NumberTypes.Contains(underlyingType) ? "ParseNumber" : "ParseString", new Type[0]));
+                var condition = Expression.Condition(Expression.Equal(textVariable, Expression.Constant(null, typeof(string))), 
+                    Expression.Constant(null, type), 
+                    parseCall);
+                
+                return Expression.Block(type, new[] { textVariable }, assignToParseNumber, condition);
+                ////var lambda = Expression.Lambda(parseCall, textParameter);
+                ////if (NumberTypes.Contains(underlyingType))
+                ////{
+                ////    var x = Expression.Call(parserParameter, "ParseNullableNumberLambda", new Type[0], new Expression[] { lambda });
+                ////    return x;
+                ////}
 
+                ////return Expression.Call(parserParameter, "ParseNullableStringLambda", new Type[0], new Expression[] { lambda });
+              
                 // Convert(Call CreateDelegate(Type, null, MethodInfo))
-                var tryParseDelegateType = typeof(TryParseDelegate<>).MakeGenericType(underlyingType);
-                var methodInfo = underlyingType.GetMethods().FirstOrDefault(m => m.Name == "TryParse" && m.GetParameters().Length == 2);
-                var createDelegate = Expression.Call(typeof(Delegate), "CreateDelegate", new Type[0], Expression.Constant(tryParseDelegateType), Expression.Constant(methodInfo));
-                var convert = Expression.Convert(createDelegate, tryParseDelegateType);
-                var methodName = NumberTypes.Contains(underlyingType) ? "ParseNullableNumber" : "ParseNullableString";
-                return Expression.Call(parserParameter, methodName, new[] { underlyingType }, convert);
+                ////var tryParseDelegateType = typeof(TryParseDelegate<>).MakeGenericType(underlyingType);
+                ////var methodInfo = underlyingType.GetMethods().FirstOrDefault(m => m.Name == "TryParse" && m.GetParameters().Length == 2);
+                ////var createDelegate = Expression.Call(typeof(Delegate), "CreateDelegate", new Type[0], Expression.Constant(tryParseDelegateType), Expression.Constant(methodInfo));
+                ////var convert = Expression.Convert(createDelegate, tryParseDelegateType);
+                ////var methodName = NumberTypes.Contains(underlyingType) ? "ParseNullableNumber" : "ParseNullableString";
+                ////return Expression.Call(parserParameter, methodName, new[] { underlyingType }, convert);
             }
             
             if (type.IsGenericType)
@@ -633,6 +652,28 @@ namespace Chason
             return null;
         }
 
+        internal T? ParseNullableNumberLambda<T>(Func<string, T> parseMethod) where T : struct
+        {
+            var text = this.ParseNumber();
+            if (text == null)
+            {
+                return null;
+            }
+
+            return parseMethod(text);
+        }
+
+        internal T? ParseNullableStringLambda<T>(Func<string, T> parseMethod) where T : struct
+        {
+            var text = this.ParseString();
+            if (text == null)
+            {
+                return null;
+            }
+
+            return parseMethod(text);
+        }
+
         /// <summary>
         /// </summary>
         /// <returns>
@@ -817,8 +858,13 @@ namespace Chason
         /// </exception>
         private string ParseNumber()
         {
-            this.LookAhead();
+            var token = this.LookAhead();
+            
             this.ConsumeToken();
+            if (token == Token.Null)
+            {
+                return null;
+            }
 
             // Need to start back one place because the first digit is also a token and would have been consumed
             var startIndex = this.index - 1;
