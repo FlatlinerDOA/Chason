@@ -32,18 +32,19 @@ namespace Chason
             { typeof(ICollection<decimal>), "ParseDecimalList" }
         };
 
-        private static readonly Type[] StringTypes = new[]
-        {
-            typeof(char),
-            typeof(string),
-            typeof(DateTime),
-            typeof(DateTimeOffset),
-            typeof(Enum),
-            typeof(TimeSpan)
-        };
+        ////private static readonly Type[] StringTypes = new[]
+        ////{
+        ////    typeof(char),
+        ////    typeof(string),
+        ////    typeof(DateTime),
+        ////    typeof(DateTimeOffset),
+        ////    typeof(Enum),
+        ////    typeof(TimeSpan)
+        ////};
 
         private static readonly Type[] NumberTypes = new[]
         {
+            typeof(byte),
             typeof(short),
             typeof(int),
             typeof(long),
@@ -59,6 +60,8 @@ namespace Chason
         /// </summary>
         internal static readonly Dictionary<Type, string> TypeParseMethods = new Dictionary<Type, string> 
         {
+            { typeof(bool), "ParseBoolean" },
+            { typeof(bool[]), "ParseBooleanArray" },
             { typeof(string), "ParseString" }, 
             { typeof(string[]), "ParseStringArray" }, 
             { typeof(short), "ParseInt16" }, 
@@ -259,12 +262,18 @@ namespace Chason
             var underlyingType = Nullable.GetUnderlyingType(type);
             if (underlyingType != null)
             {
+                if (underlyingType == typeof(bool))
+                {
+                    return Expression.Call(parserParameter, "ParseNullableBoolean", new Type[0]);
+                }
+
                 // Convert(Call CreateDelegate(Type, null, MethodInfo))
                 var tryParseDelegateType = typeof(TryParseDelegate<>).MakeGenericType(underlyingType);
                 var methodInfo = underlyingType.GetMethods().FirstOrDefault(m => m.Name == "TryParse" && m.GetParameters().Length == 2);
                 var createDelegate = Expression.Call(typeof(Delegate), "CreateDelegate", new Type[0], Expression.Constant(tryParseDelegateType), Expression.Constant(methodInfo));
                 var convert = Expression.Convert(createDelegate, tryParseDelegateType);
-                return Expression.Call(parserParameter, NumberTypes.Contains(underlyingType) ? "ParseNullableNumber" : "ParseNullableString", new[] { underlyingType }, convert);
+                var methodName = NumberTypes.Contains(underlyingType) ? "ParseNullableNumber" : "ParseNullableString";
+                return Expression.Call(parserParameter, methodName, new[] { underlyingType }, convert);
             }
             
             if (type.IsGenericType)
@@ -772,6 +781,34 @@ namespace Chason
             throw new SerializationException("Could not find token at index " + --this.index);
         }
 
+        internal bool? ParseNullableBoolean()
+        {
+            var token = this.LookAhead();
+            this.ConsumeToken();
+            if (token == Token.Null)
+            {
+                return null;
+            }
+
+            return token == Token.True;
+        }
+
+        private bool ParseBoolean()
+        {
+            var token = this.LookAhead();
+            this.ConsumeToken();
+            return token == Token.True;
+        }
+
+        /// <summary>
+        /// </summary>
+        /// <returns>
+        /// </returns>
+        internal bool[] ParseBooleanArray()
+        {
+            return this.ParseArray(this.ParseBoolean);
+        }
+
         /// <summary>
         /// </summary>
         /// <returns>
@@ -856,6 +893,55 @@ namespace Chason
                             ////object value = ParseValue();
 
                             ////table[name] = value;
+                        }
+
+                        break;
+                }
+            }
+        }
+
+        /// <summary>
+        /// </summary>
+        /// <typeparam name="T">
+        /// </typeparam>
+        /// <returns>
+        /// </returns>
+        /// <exception cref="SerializationException">
+        /// </exception>
+        private Dictionary<string, string> ParseDictionary()
+        {
+            var instance = new Dictionary<string, string>();
+            if (this.LookAhead() != Token.CurlyOpen)
+            {
+                throw new SerializationException("Expected curly open at index " + this.index);
+            }
+
+            this.ConsumeToken(); // {
+
+            while (true)
+            {
+                switch (this.LookAhead())
+                {
+                    case Token.Comma:
+                        this.ConsumeToken();
+                        break;
+
+                    case Token.CurlyClose:
+                        this.ConsumeToken();
+                        return instance;
+
+                    default:
+                        {
+                            // name
+                            string name = this.ParseString();
+
+                            // :
+                            if (this.NextToken() != Token.Colon)
+                            {
+                                throw new SerializationException("Expected colon at index " + this.index);
+                            }
+
+                            instance[name] = this.ParseString();
                         }
 
                         break;
@@ -1028,5 +1114,33 @@ namespace Chason
         }
 
         #endregion
+
+        /// <summary>
+        /// Skips the value of an unexpected property (throwing it away)
+        /// </summary>
+        public void SkipValue()
+        {
+            var token = this.NextTokenCore();
+            switch (token)
+            {
+                case Token.True:
+                case Token.False:
+                case Token.Null:
+                    this.ConsumeToken();
+                    return;
+                case Token.Number:
+                    this.ParseNumber();
+                    return;
+                case Token.String:
+                    this.ParseString();
+                    return;
+                case Token.SquaredOpen:
+                    this.ParseStringArray();
+                    return;
+                case Token.CurlyOpen:
+                    this.ParseDictionary();
+                    return;
+            }
+        }
     }
 }

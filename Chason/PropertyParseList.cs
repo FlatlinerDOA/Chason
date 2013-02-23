@@ -119,9 +119,17 @@ namespace Chason
                 }
             }
 
-            // TODO: Use TryGetvalue and also try resetting the iterator so that rogue unexpected properties don't kill perf.
+            // TODO: Try resetting the iterator so that rogue unexpected properties don't kill perf.
             // The sequence was unexpected, fall back to a dictionary lookup.
-            this.setters[name].Parse(parser, instance);
+            PropertyParser<T> p;
+            if (this.setters.TryGetValue(name, out p))
+            {
+                p.Parse(parser, instance);
+            }
+            else
+            {
+                parser.SkipValue();
+            }
         }
 
         #endregion

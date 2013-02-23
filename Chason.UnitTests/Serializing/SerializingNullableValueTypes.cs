@@ -17,8 +17,12 @@ namespace Chason.UnitTests.Serializing
     {
         private readonly SupportedNullableValueTypesContract Data = new SupportedNullableValueTypesContract()
                                                                         {
+                                                                            Boolean = true,
+                                                                            Byte = 60,
+                                                                            SignedInt16 = 1234,
                                                                             SignedInt32 = 12345, 
                                                                             SignedInt64 = 123456789, 
+                                                                            UnsignedInt16 = 12345,
                                                                             UnsignedInt32 = 123456, 
                                                                             UnsignedInt64 = 1234567890, 
                                                                             Decimal = 1.23456789M, 
@@ -37,10 +41,22 @@ namespace Chason.UnitTests.Serializing
         public sealed class SupportedNullableValueTypesContract
         {
             [DataMember]
+            public bool? Boolean { get; set; }
+
+            [DataMember]
+            public byte? Byte { get; set; }
+
+            [DataMember]
+            public short? SignedInt16 { get; set; }
+
+            [DataMember]
             public int? SignedInt32 { get; set; }
 
             [DataMember]
             public long? SignedInt64 { get; set; }
+
+            [DataMember]
+            public ushort? UnsignedInt16 { get; set; }
 
             [DataMember]
             public uint? UnsignedInt32 { get; set; }
@@ -52,10 +68,10 @@ namespace Chason.UnitTests.Serializing
             public decimal? Decimal { get; set; }
 
             [DataMember]
-            public double? Double { get; set; }
+            public float? Float { get; set; }
 
             [DataMember]
-            public float? Float { get; set; }
+            public double? Double { get; set; }
 
             [DataMember]
             public DateTime? DateTime { get; set; }
@@ -75,6 +91,22 @@ namespace Chason.UnitTests.Serializing
         }
 
         [TestMethod]
+        public void TheNullableBooleanIsSerialized()
+        {
+            this.result.Should().Contain("\"Boolean\":true");
+        }
+        [TestMethod]
+        public void TheNullableByteIsSerialized()
+        {
+            this.result.Should().Contain("\"Byte\":60");
+        }
+        [TestMethod]
+        public void TheNullableSignedInt16IsSerialized()
+        {
+            this.result.Should().Contain("\"SignedInt16\":1234");
+        }
+
+        [TestMethod]
         public void TheNullableSignedInt32IsSerialized()
         {
             this.result.Should().Contain("\"SignedInt32\":12345");
@@ -84,6 +116,12 @@ namespace Chason.UnitTests.Serializing
         public void TheNullableSignedInt64IsSerialized()
         {
             this.result.Should().Contain("\"SignedInt64\":123456789");
+        }
+
+        [TestMethod]
+        public void TheNullableUnsignedInt16IsSerialized()
+        {
+            this.result.Should().Contain("\"UnsignedInt16\":12345");
         }
 
         [TestMethod]

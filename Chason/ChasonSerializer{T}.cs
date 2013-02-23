@@ -168,7 +168,33 @@ namespace Chason
         {
             var getterCall = Expression.Call(instance, property.GetGetMethod());
             var writeMethod = typeof(TextWriter).GetMethod("Write", new[] { property.PropertyType });
+            var paramType = writeMethod.GetParameters().First().ParameterType;
+            if (paramType != property.PropertyType)
+            {
+                return Expression.Call(writer, writeMethod, new Expression[] { Expression.Convert(getterCall, paramType) });
+            }
+
             return Expression.Call(writer, writeMethod, new Expression[] { getterCall });
+        }
+
+
+        private Expression WriteBoolean(PropertyInfo property, ParameterExpression instance, ParameterExpression writer)
+        {
+            var getterCall = Expression.Call(instance, property.GetGetMethod());
+            var convert = Expression.Condition(getterCall, Expression.Constant("true"), Expression.Constant("false"));
+            return Expression.Call(writer, ChasonSerializer.WriteStringMethod, new Expression[] { convert });
+        }
+
+        private Expression WriteNullableBoolean(PropertyInfo property, ParameterExpression instance, ParameterExpression writer)
+        {
+            var getterCall = Expression.Property(instance, property);
+            var toString = Expression.Condition(Expression.Property(getterCall, "Value"), Expression.Constant("true"), Expression.Constant("false"));
+            var coalesce = Expression.Condition(
+                Expression.Equal(getterCall, Expression.Constant(null)),
+                Expression.Constant("null"),
+                toString);
+
+            return Expression.Call(writer, ChasonSerializer.WriteStringMethod, new Expression[] { coalesce });
         }
 
 
@@ -193,8 +219,7 @@ namespace Chason
                 Expression.Constant("null"),
                 toString);
 
-            var result = Expression.Call(writer, ChasonSerializer.WriteStringMethod, new Expression[] { coalesce });
-            return result;
+            return Expression.Call(writer, ChasonSerializer.WriteStringMethod, new Expression[] { coalesce });
         }
         /// <summary>
         /// </summary>
@@ -242,6 +267,10 @@ namespace Chason
             {
                 yield return this.WriteString(property, instance, writer);
             }
+            else if (type == typeof(bool))
+            {
+                yield return this.WriteBoolean(property, instance, writer);
+            }
             else if (ChasonSerializer.LiteralTypes.Contains(type))
             {
                 yield return this.WriteLiteral(property, instance, writer);
@@ -259,7 +288,11 @@ namespace Chason
                 var elementType = Nullable.GetUnderlyingType(type);
                 if (elementType != null)
                 {
-                    if (ChasonSerializer.LiteralTypes.Contains(elementType))
+                    if (elementType == typeof(bool))
+                    {
+                        yield return this.WriteNullableBoolean(property, instance, writer);
+                    } 
+                    else if (ChasonSerializer.LiteralTypes.Contains(elementType))
                     {
                         yield return this.WriteNullableLiteral(property, instance, writer);
                     }

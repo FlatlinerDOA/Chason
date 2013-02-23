@@ -31,8 +31,12 @@ namespace Chason
 
         internal static readonly HashSet<Type> LiteralTypes = new HashSet<Type>
                                                                   {
+                                                                      typeof(bool),
+                                                                      typeof(byte),
+                                                                      typeof(short),
                                                                       typeof(int),
                                                                       typeof(long), 
+                                                                      typeof(ushort),
                                                                       typeof(uint), 
                                                                       typeof(ulong), 
                                                                       typeof(decimal),  
