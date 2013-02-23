@@ -22,31 +22,22 @@ namespace Chason
         /// <summary>
         /// The list of escaped characters in JSON
         /// </summary>
-        public static readonly char[] CharsToEscape = new[] { '"', '\\', '\r', '\n', '\t', '/', '\b', '\f' };
+        internal static readonly char[] CharsToEscape = new[] { '"', '\\', '\r', '\n', '\t', '/', '\b', '\f' };
 
         /// <summary>
         /// A cache to the method to write with
         /// </summary>
         internal static readonly MethodInfo WriteStringMethod = typeof(TextWriter).GetMethod("Write", new[] { typeof(string) });
 
-        /// <summary>
-        /// 
-        /// </summary>
-        internal static readonly HashSet<Type> ObjectAsStringTypes = new HashSet<Type> 
-                                                                         {
-                                                                             typeof(DateTime),
-                                                                             typeof(DateTimeOffset),
-                                                                             typeof(TimeSpan),
-                                                                             typeof(TimeZoneInfo)
-                                                                         };
-
         internal static readonly HashSet<Type> LiteralTypes = new HashSet<Type>
                                                                   {
-                                                                      typeof(int), 
+                                                                      typeof(int),
                                                                       typeof(long), 
                                                                       typeof(uint), 
                                                                       typeof(ulong), 
-                                                                      typeof(decimal)
+                                                                      typeof(decimal),  
+                                                                      typeof(float),
+                                                                      typeof(double),
                                                                   };
 
 
@@ -200,12 +191,12 @@ namespace Chason
 
         public static string SerializeToString<T>(T data)
         {
-            return ChasonSerializer<T>.Instance.Serialize(data);
+            return ChasonSerializer<T>.Instance.Value.Serialize(data);
         }
 
         public static T DeserializeFromString<T>(string json)
         {
-            return ChasonSerializer<T>.Instance.Deserialize(json);
+            return ChasonSerializer<T>.Instance.Value.Deserialize(json);
         }
     }
 }

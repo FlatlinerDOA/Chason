@@ -26,7 +26,7 @@ namespace Chason.UnitTests.Serializing
                                                                             Float = 123.45f, 
                                                                             DateTime = new DateTime(1997, 07, 16, 19, 20, 30, DateTimeKind.Unspecified), 
                                                                             DateTimeOffset = new DateTimeOffset(2013, 02, 07, 23, 33, 27, 465, new TimeSpan(0,11,0,0)), 
-                                                                            TimeSpan= new TimeSpan(1, 1, 2, 3, 456)
+                                                                            TimeSpan = new TimeSpan(1, 1, 2, 3, 456)
                                                                         };
 
         private ChasonSerializer<SupportedNullableValueTypesContract> serializer;

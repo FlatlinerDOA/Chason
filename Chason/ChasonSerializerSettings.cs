@@ -123,6 +123,9 @@ namespace Chason
             this.DateTimeStyles = DateTimeStyles.None;
             this.PropertyNameComparer = StringComparer.Ordinal;
             this.typeMarkerName = DefaultTypeMarkerName;
+
+            this.AddCommonTypes();
+
         }
 
         /// <summary>
@@ -435,6 +438,22 @@ namespace Chason
         public ChasonSerializerSettings Clone()
         {
             return new ChasonSerializerSettings(this);
+        }
+
+        /// <summary>
+        /// Adds common types
+        /// </summary>
+        private void AddCommonTypes()
+        {
+            this.AddCustomStringFormatter(
+                dt => dt.ToString(this.DateTimeFormat, this.CultureInfo), 
+                dt => DateTime.ParseExact(dt, this.DateTimeFormat, this.CultureInfo, this.DateTimeStyles));
+            this.AddCustomStringFormatter(
+                dt => dt.ToString(this.DateTimeOffsetFormat, this.CultureInfo),
+                dt => DateTimeOffset.ParseExact(dt, this.DateTimeOffsetFormat, this.CultureInfo, this.DateTimeStyles));
+            this.AddCustomStringFormatter(
+                dt => dt.ToString(this.TimeSpanFormat, this.CultureInfo),
+                dt => TimeSpan.ParseExact(dt, this.TimeSpanFormat, this.CultureInfo, this.TimeSpanStyles));
         }
 
         /// <summary>

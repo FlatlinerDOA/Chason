@@ -22,7 +22,7 @@ namespace Chason
     /// </typeparam>
     public sealed class ChasonSerializer<T>
     {
-        internal static readonly ChasonSerializer<T> Instance = new ChasonSerializer<T>(); 
+        internal static readonly Lazy<ChasonSerializer<T>> Instance = new Lazy<ChasonSerializer<T>>(); 
         
         #region Fields
 
@@ -171,6 +171,31 @@ namespace Chason
             return Expression.Call(writer, writeMethod, new Expression[] { getterCall });
         }
 
+
+        /// <summary>
+        /// </summary>
+        /// <param name="property">
+        /// </param>
+        /// <param name="instance">
+        /// </param>
+        /// <param name="writer">
+        /// </param>
+        /// <returns>
+        /// </returns>
+        private Expression WriteNullableLiteral(PropertyInfo property, ParameterExpression instance, ParameterExpression writer, Expression convertToString = null)
+        {
+            var getterCall = Expression.Property(instance, property);
+            var toString = convertToString == null ?
+                Expression.Call(getterCall, "ToString", new Type[0]) :
+                (Expression)Expression.Invoke(convertToString, new Expression[] { Expression.Property(getterCall, "Value") });
+            var coalesce = Expression.Condition(
+                Expression.Equal(getterCall, Expression.Constant(null)),
+                Expression.Constant("null"),
+                toString);
+
+            var result = Expression.Call(writer, ChasonSerializer.WriteStringMethod, new Expression[] { coalesce });
+            return result;
+        }
         /// <summary>
         /// </summary>
         /// <param name="instance">
@@ -223,11 +248,7 @@ namespace Chason
             }
             else if (this.settings.CustomWriters.ContainsKey(type))
             {
-                yield return this.settings.CustomWriters[type];
-            }
-            else if (ChasonSerializer.ObjectAsStringTypes.Contains(type))
-            {
-                yield return this.WriteObjectAsString(property, instance, writer);
+                yield return this.WriteObjectAsString(property, instance, writer, this.settings.CustomWriters[type]);
             }
             else if (type.IsArray)
             {
@@ -238,7 +259,18 @@ namespace Chason
                 var elementType = Nullable.GetUnderlyingType(type);
                 if (elementType != null)
                 {
-                    yield return this.WriteNullableObjectAsString(property, instance, writer);
+                    if (ChasonSerializer.LiteralTypes.Contains(elementType))
+                    {
+                        yield return this.WriteNullableLiteral(property, instance, writer);
+                    }
+                    else if (this.settings.CustomWriters.ContainsKey(elementType))
+                    {
+                        yield return this.WriteNullableObjectAsString(property, instance, writer, this.settings.CustomWriters[elementType]);
+                    }
+                    else
+                    {
+                        yield return this.WriteNullableObjectAsString(property, instance, writer, null);
+                    }
                 }
                 else
                 {
@@ -311,9 +343,7 @@ namespace Chason
         /// </param>
         /// <param name="writer">
         /// </param>
-        /// <param name="toStringMethodName">
-        /// </param>
-        /// <param name="arguments">
+        /// <param name="convertToString">
         /// </param>
         /// <returns>
         /// </returns>
@@ -321,14 +351,21 @@ namespace Chason
             PropertyInfo property,
             ParameterExpression instance,
             ParameterExpression writer,
-            string toStringMethodName = "ToString",
-            params Expression[] arguments)
+            Expression convertToString)
         {
             var getterCall = Expression.Property(instance, property);
-            var toString = Expression.Call(getterCall, toStringMethodName, new Type[0], arguments);
-            var coalesce = Expression.Condition(Expression.Equal(getterCall, Expression.Constant(null)), toString, Expression.Constant("null"));
-            // TODO: Figure out if we need to escape these values i.e call EscapeString method?
-            return Expression.Call(writer, ChasonSerializer.WriteStringMethod, new Expression[] { coalesce });
+            var toString = convertToString == null ? 
+                Expression.Call(getterCall, "ToString", new Type[0]) : 
+                (Expression)Expression.Invoke(convertToString, new Expression[] { Expression.Property(getterCall, "Value") });
+            var coalesce = Expression.Condition(
+                Expression.Equal(getterCall, Expression.Constant(null)), 
+                Expression.Constant("null"), 
+                toString);
+
+            var escapeMethod = typeof(ChasonSerializer).GetMethod("EscapeString", new[] { typeof(string) });
+            var escapeCall = Expression.Call(null, escapeMethod, new Expression[] { coalesce });
+            var result = Expression.Call(writer, ChasonSerializer.WriteStringMethod, new Expression[] { escapeCall });
+            return result;
         }
         /// <summary>
         /// </summary>
@@ -338,24 +375,22 @@ namespace Chason
         /// </param>
         /// <param name="writer">
         /// </param>
-        /// <param name="toStringMethodName">
-        /// </param>
-        /// <param name="arguments">
+        /// <param name="convertToString">
         /// </param>
         /// <returns>
         /// </returns>
         private Expression WriteObjectAsString(
             PropertyInfo property, 
             ParameterExpression instance, 
-            ParameterExpression writer, 
-            string toStringMethodName = "ToString", 
-            params Expression[] arguments)
+            ParameterExpression writer,
+            Expression convertToString)
         {
             var getterCall = Expression.Property(instance, property);
-            var toString = Expression.Call(getterCall, toStringMethodName, new Type[0], arguments);
+            var toString = convertToString == null ? Expression.Call(getterCall, "ToString", new Type[0]) : (Expression)Expression.Invoke(convertToString, new Expression[] { getterCall });
             
-            // TODO: Figure out if we need to escape these values i.e call EscapeString method?
-            return Expression.Call(writer, ChasonSerializer.WriteStringMethod, new Expression[] { toString });
+            var escapeMethod = typeof(ChasonSerializer).GetMethod("EscapeString", new[] { typeof(string) });
+            var escapeCall = Expression.Call(null, escapeMethod, new Expression[] { toString });
+            return Expression.Call(writer, ChasonSerializer.WriteStringMethod, new Expression[] { escapeCall });
         }
 
         /// <summary>
