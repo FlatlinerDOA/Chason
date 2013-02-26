@@ -25,7 +25,7 @@ namespace Chason
         internal static readonly char[] CharsToEscape = new[] { '"', '\\', '\r', '\n', '\t', '/', '\b', '\f' };
 
         /// <summary>
-        /// A cache to the method to write with
+        /// A cache to the text writer method to write a string with
         /// </summary>
         internal static readonly MethodInfo WriteStringMethod = typeof(TextWriter).GetMethod("Write", new[] { typeof(string) });
 

@@ -103,7 +103,8 @@ namespace Chason
         
         private readonly Dictionary<Type, string> typeToNameMapping = new Dictionary<Type, string>();
 
-        
+        private bool omitNullValues;
+
         /// <summary>
         /// Initalizes a new instance of the <see cref="ChasonSerializerSettings"/> class.
         /// </summary>
@@ -111,8 +112,10 @@ namespace Chason
         {
             this.TypeNameResolver = type => this.typeToNameMapping[type];
             this.TypeResolver = typeName => this.nameToTypeMapping[typeName];
-            this.CustomReaders = new Dictionary<Type, Expression>();
-            this.CustomWriters = new Dictionary<Type, Expression>();
+            this.CustomStringReaders = new Dictionary<Type, Expression>();
+            this.CustomStringWriters = new Dictionary<Type, Expression>();
+            this.CustomNumberReaders = new Dictionary<Type, Expression>();
+            this.CustomNumberWriters = new Dictionary<Type, Expression>();
             this.DateTimeFormat = DefaultDateTimeFormat;
             this.DateTimeOffsetFormat = DefaultDateTimeOffsetFormat;
             this.CultureInfo = CultureInfo.InvariantCulture;
@@ -125,7 +128,6 @@ namespace Chason
             this.typeMarkerName = DefaultTypeMarkerName;
 
             this.AddCommonTypes();
-
         }
 
         /// <summary>
@@ -156,8 +158,11 @@ namespace Chason
             this.timeSpanStyles = serializerSettings.TimeSpanStyles;
             this.dateTimeStyles = serializerSettings.DateTimeStyles;
             this.propertyNameComparer = serializerSettings.PropertyNameComparer;
-            this.CustomWriters = new Dictionary<Type, Expression>(serializerSettings.CustomWriters);
-            this.CustomReaders = new Dictionary<Type, Expression>(serializerSettings.CustomReaders);
+            this.omitNullValues = serializerSettings.omitNullValues;
+            this.CustomStringWriters = new Dictionary<Type, Expression>(serializerSettings.CustomStringWriters);
+            this.CustomStringReaders = new Dictionary<Type, Expression>(serializerSettings.CustomStringReaders);
+            this.CustomNumberWriters = new Dictionary<Type, Expression>(serializerSettings.CustomNumberWriters);
+            this.CustomNumberReaders = new Dictionary<Type, Expression>(serializerSettings.CustomNumberReaders);
         }
 
         /// <summary>
@@ -331,6 +336,23 @@ namespace Chason
         }
 
         /// <summary>
+        /// Gets or sets a value indicating whether properties values should not be output when serializing if they are null.
+        /// </summary>
+        public bool OmitNullValues
+        {
+            get
+            {
+                return this.omitNullValues;
+            }
+
+            set
+            {
+                this.EnsureNotReadOnly();
+                this.omitNullValues = value;
+            }
+        }
+
+        /// <summary>
         /// Gets or sets the string comparer to use when reading property names (defaults to <see cref="StringComparer.Ordinal"/>)
         /// </summary>
         public IEqualityComparer<string> PropertyNameComparer
@@ -373,8 +395,8 @@ namespace Chason
         public void AddCustomStringFormatter<T>(Expression<Func<T, string>> toString, Expression<Func<string, T>> fromString)
         {
             this.EnsureNotReadOnly();
-            this.CustomWriters.Add(typeof(T), toString);
-            this.CustomReaders.Add(typeof(T), fromString);
+            this.CustomStringWriters.Add(typeof(T), toString);
+            this.CustomStringReaders.Add(typeof(T), fromString);
         }
 
         /// <summary>
@@ -386,8 +408,8 @@ namespace Chason
         public void AddCustomNumberFormatter<T>(Expression<Func<T, decimal>> toNumber, Expression<Func<decimal, T>> fromNumber)
         {
             this.EnsureNotReadOnly();
-            this.CustomWriters.Add(typeof(T), toNumber);
-            this.CustomReaders.Add(typeof(T), fromNumber);
+            this.CustomNumberWriters.Add(typeof(T), toNumber);
+            this.CustomNumberReaders.Add(typeof(T), fromNumber);
         }
 
         /// <summary>
@@ -399,19 +421,29 @@ namespace Chason
         public void AddCustomDictionaryFormatter<T>(Expression<Func<T, IDictionary<string, string>>> toDictionary, Expression<Func<IDictionary<string, string>, T>> fromDictionary)
         {
             this.EnsureNotReadOnly();
-            this.CustomWriters.Add(typeof(T), toDictionary);
-            this.CustomReaders.Add(typeof(T), fromDictionary);
+            this.CustomStringWriters.Add(typeof(T), toDictionary);
+            this.CustomStringReaders.Add(typeof(T), fromDictionary);
         }
 
         /// <summary>
         /// Gets the custom reader expressions
         /// </summary>
-        public IDictionary<Type, Expression> CustomReaders { get; private set; }
+        public IDictionary<Type, Expression> CustomStringReaders { get; private set; }
 
         /// <summary>
         /// Gets the custom writer expressions
         /// </summary>
-        public IDictionary<Type, Expression> CustomWriters { get; private set; }
+        public IDictionary<Type, Expression> CustomStringWriters { get; private set; }
+
+        /// <summary>
+        /// Gets the custom reader expressions
+        /// </summary>
+        public IDictionary<Type, Expression> CustomNumberReaders { get; private set; }
+
+        /// <summary>
+        /// Gets the custom writer expressions
+        /// </summary>
+        public IDictionary<Type, Expression> CustomNumberWriters { get; private set; }
 
         /// <summary>
         /// Locks the settings so that no further modifications can be made to them.
@@ -428,6 +460,11 @@ namespace Chason
                     this.typeToNameMapping[knownType] = name;
                     this.nameToTypeMapping[name] = knownType;
                 }
+
+                this.CustomStringReaders = new ReadOnlyDictionary<Type, Expression>(this.CustomStringReaders);
+                this.CustomStringWriters = new ReadOnlyDictionary<Type, Expression>(this.CustomStringWriters);
+                this.CustomNumberReaders = new ReadOnlyDictionary<Type, Expression>(this.CustomNumberReaders);
+                this.CustomNumberWriters = new ReadOnlyDictionary<Type, Expression>(this.CustomNumberWriters);
             }
         }
 

@@ -275,9 +275,13 @@ namespace Chason
             {
                 yield return this.WriteLiteral(property, instance, writer);
             }
-            else if (this.settings.CustomWriters.ContainsKey(type))
+            else if (this.settings.CustomStringWriters.ContainsKey(type))
             {
-                yield return this.WriteObjectAsString(property, instance, writer, this.settings.CustomWriters[type]);
+                yield return this.WriteObjectAsString(property, instance, writer, this.settings.CustomStringWriters[type]);
+            } 
+            else if (this.settings.CustomNumberWriters.ContainsKey(type))
+            {
+                yield return this.WriteObjectAsNumber(property, instance, writer, this.settings.CustomNumberWriters[type]);
             }
             else if (type.IsArray)
             {
@@ -296,9 +300,13 @@ namespace Chason
                     {
                         yield return this.WriteNullableLiteral(property, instance, writer);
                     }
-                    else if (this.settings.CustomWriters.ContainsKey(elementType))
+                    else if (this.settings.CustomStringWriters.ContainsKey(elementType))
                     {
-                        yield return this.WriteNullableObjectAsString(property, instance, writer, this.settings.CustomWriters[elementType]);
+                        yield return this.WriteNullableObjectAsString(property, instance, writer, this.settings.CustomStringWriters[elementType]);
+                    }
+                    else if (this.settings.CustomNumberWriters.ContainsKey(elementType))
+                    {
+                        yield return this.WriteNullableObjectAsNumber(property, instance, writer, this.settings.CustomNumberWriters[elementType]);
                     }
                     else
                     {
@@ -400,6 +408,7 @@ namespace Chason
             var result = Expression.Call(writer, ChasonSerializer.WriteStringMethod, new Expression[] { escapeCall });
             return result;
         }
+
         /// <summary>
         /// </summary>
         /// <param name="property">
@@ -424,6 +433,48 @@ namespace Chason
             var escapeMethod = typeof(ChasonSerializer).GetMethod("EscapeString", new[] { typeof(string) });
             var escapeCall = Expression.Call(null, escapeMethod, new Expression[] { toString });
             return Expression.Call(writer, ChasonSerializer.WriteStringMethod, new Expression[] { escapeCall });
+        }
+
+        /// <summary>
+        /// </summary>
+        /// <param name="property">
+        /// </param>
+        /// <param name="instance">
+        /// </param>
+        /// <param name="writer">
+        /// </param>
+        /// <param name="convertToDecimal">
+        /// </param>
+        /// <returns>
+        /// </returns>
+        private Expression WriteObjectAsNumber(
+            PropertyInfo property,
+            ParameterExpression instance,
+            ParameterExpression writer,
+            Expression convertToDecimal = null)
+        {
+            var getterCall = Expression.Property(instance, property);
+            var toDecimal = convertToDecimal == null ? Expression.Convert(getterCall, typeof(decimal)) : (Expression)Expression.Invoke(convertToDecimal, new Expression[] { getterCall });
+            return Expression.Call(writer, "Write", new Type[0], new Expression[] { toDecimal });
+        }
+
+        private Expression WriteNullableObjectAsNumber(
+            PropertyInfo property,
+            ParameterExpression instance,
+            ParameterExpression writer,
+            Expression convertToDecimal = null)
+        {
+            var getterCall = Expression.Property(instance, property);
+            var toDecimal = convertToDecimal == null ?
+                Expression.Convert(getterCall, typeof(decimal)) :
+                (Expression)Expression.Invoke(convertToDecimal, new Expression[] { Expression.Property(getterCall, "Value") });
+            var coalesce = Expression.Condition(
+                Expression.Equal(getterCall, Expression.Constant(null)),
+                Expression.Constant("null"),
+                toDecimal);
+
+            var result = Expression.Call(writer, "Write", new Type[0], new Expression[] { coalesce });
+            return result;
         }
 
         /// <summary>

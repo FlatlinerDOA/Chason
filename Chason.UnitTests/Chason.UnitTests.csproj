@@ -64,6 +64,7 @@
     <Compile Include="Deserializing\DeserializingValueTypes.cs" />
     <Compile Include="Deserializing\DeserializingNullableValueTypes.cs" />
     <Compile Include="Deserializing\DeserializingASimpleJsonString.cs" />
+    <Compile Include="Serializing\Formatting\CustomNumberValueType.cs" />
     <Compile Include="Serializing\SerializingNullableValueTypes.cs" />
     <Compile Include="Serializing\Formatting\PropertyNameFormatting.cs" />
     <Compile Include="Serializing\SerializingArrays.cs" />
