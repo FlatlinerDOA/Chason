@@ -65,6 +65,8 @@ namespace Chason
             { typeof(bool[]), "ParseBooleanArray" },
             { typeof(string), "ParseString" }, 
             { typeof(string[]), "ParseStringArray" }, 
+            { typeof(byte), "ParseByte" }, 
+            { typeof(byte[]), "ParseByteArray" }, 
             { typeof(short), "ParseInt16" }, 
             { typeof(short[]), "ParseInt16Array" }, 
             { typeof(int), "ParseInt32" }, 
@@ -452,6 +454,24 @@ namespace Chason
         /// </summary>
         /// <returns>
         /// </returns>
+        internal byte ParseByte()
+        {
+            return byte.Parse(this.ParseNumber());
+        }
+
+        /// <summary>
+        /// </summary>
+        /// <returns>
+        /// </returns>
+        internal byte[] ParseByteArray()
+        {
+            return this.ParseArray(this.ParseByte);
+        }
+
+        /// <summary>
+        /// </summary>
+        /// <returns>
+        /// </returns>
         internal short ParseInt16()
         {
             return short.Parse(this.ParseNumber());
@@ -601,7 +621,12 @@ namespace Chason
         internal TList ParseCollection<TList, TItem>(Func<TItem> parse) where TList : ICollection<TItem>
         {
             var array = MemberParseList<TList>.Instance.New();
-            this.ConsumeToken(); // [
+            if (this.LookAhead() != Token.SquaredOpen)
+            {
+                throw new SerializationException("Expected '[' at index " + this.index);
+            }
+
+            this.ConsumeToken();
 
             while (true)
             {
@@ -614,9 +639,6 @@ namespace Chason
                     case Token.SquaredClose:
                         this.ConsumeToken();
                         return array;
-                    case Token.SquaredOpen:
-                        this.ConsumeToken();
-                        break;
                     default:
                         array.Add(parse());
                         break;
@@ -946,7 +968,8 @@ namespace Chason
         /// </exception>
         private T ParseObject<T>()
         {
-            var instanceParser = (MemberParseList<T>)this.parsers.GetOrAdd(typeof(T), _ => new MemberParseList<T>(this.settings));
+            // TODO: Figure out a faster way of caching (ConcurrentDictionary is attrocious)
+            var instanceParser = MemberParseList<T>.Instance; //(MemberParseList<T>)this.parsers.GetOrAdd(typeof(T), _ => new MemberParseList<T>(this.settings));
             var instance = instanceParser.New();
             if (this.LookAhead() != Token.CurlyOpen)
             {
