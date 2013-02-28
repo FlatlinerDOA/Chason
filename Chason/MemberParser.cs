@@ -1,5 +1,5 @@
 ﻿//--------------------------------------------------------------------------------------------------
-// <copyright file="PropertyParser{T}.cs" company="Andrew Chisholm">
+// <copyright file="MemberParser.cs" company="Andrew Chisholm">
 //   Copyright (c) 2013 Andrew Chisholm All rights reserved.
 // </copyright>
 //--------------------------------------------------------------------------------------------------
@@ -14,7 +14,7 @@ namespace Chason
     /// Encapsulates a single named property and it's corresponding Parse method and Property setter expression.
     /// </summary>
     /// <typeparam name="T">The property type for the property</typeparam>
-    internal sealed class PropertyParser<T>
+    internal sealed class MemberParser<T>
     {
         /// <summary>
         /// Initializes a new instance of the PropertyParser class.
@@ -23,13 +23,25 @@ namespace Chason
         /// <param name="info">The property info</param>
         /// <param name="parserParameter">An expression that will reference the <see cref="ChasonParser"/> instance, passed as a parameter</param>
         /// <param name="instanceParameter">An expression that will reference the instance the property is to be assigned to, passed as a parameter</param>
-        public PropertyParser(DataMemberAttribute dataMember, PropertyInfo info, ParameterExpression parserParameter, ParameterExpression instanceParameter)
+        public MemberParser(DataMemberAttribute dataMember, MemberInfo info, ParameterExpression parserParameter, ParameterExpression instanceParameter)
         {
             this.Name = dataMember.Name ?? info.Name;
             this.Sequence = dataMember.Order;
-            var parseCall = ChasonParser.GetParseMethodCall(info.PropertyType, parserParameter);
-            var setPropertyCall = Expression.Call(instanceParameter, info.GetSetMethod(true), new Expression[] { parseCall });
-            this.SetExpression = setPropertyCall;
+            var memberType = info.MemberType();
+            var parseCall = ChasonParser.GetParseMethodCall(memberType, parserParameter);
+            this.SetExpression = Expression.Assign(Expression.MakeMemberAccess(instanceParameter, info), parseCall);
+            this.Parse = Expression.Lambda<Action<ChasonParser, T>>(this.SetExpression, parserParameter, instanceParameter).Compile();
+        }
+
+        public MemberParser(DataMemberAttribute dataMember, MemberInfo info, ParameterExpression parserParameter, ParameterExpression instanceParameter, Expression readExpression)
+        {
+            this.Name = dataMember.Name ?? info.Name;
+            this.Sequence = dataMember.Order;
+            var readAsType = ((LambdaExpression)readExpression).Parameters[0].Type;
+            var parseCall = ChasonParser.GetParseMethodCall(readAsType, parserParameter);
+            
+            this.SetExpression = Expression.Assign(Expression.MakeMemberAccess(instanceParameter, info), Expression.Invoke(readExpression, parseCall));
+            ////this.SetExpression = Expression.Invoke(setExpression, new Expression[] { instanceParameter });
             this.Parse = Expression.Lambda<Action<ChasonParser, T>>(this.SetExpression, parserParameter, instanceParameter).Compile();
         }
 

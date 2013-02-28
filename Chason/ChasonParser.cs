@@ -6,6 +6,7 @@
 namespace Chason
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Linq;
     using System.Linq.Expressions;
@@ -115,6 +116,8 @@ namespace Chason
         /// <summary>
         /// </summary>
         private Token lookAheadToken = Token.None;
+
+        private readonly ConcurrentDictionary<Type, object> parsers = new ConcurrentDictionary<Type, object>();
 
         #endregion
 
@@ -310,7 +313,10 @@ namespace Chason
             else if (type.IsArray)
             {
                 var elementType = type.GetElementType();
-                return Expression.Call(parserParameter, "ParseArray", new[] { elementType });
+                var arrayValueParseMethod = GetParseMethodCall(elementType, parserParameter);
+                var funcType = typeof(Func<,>).MakeGenericType(typeof(ChasonParser), elementType);
+                var func = Expression.Lambda(funcType, arrayValueParseMethod, parserParameter).Compile();
+                return Expression.Call(parserParameter, "ParseArray", new[] { elementType }, Expression.Constant(func));
             }
 
             return Expression.Call(parserParameter, "ParseObject", new[] { type });
@@ -324,7 +330,20 @@ namespace Chason
         /// </typeparam>
         /// <returns>
         /// </returns>
-        internal T[] ParseArray<T>(Func<T> parse)
+        public T[] ParseArray<T>(Func<ChasonParser, T> parse)
+        {
+            return this.ParseCollection<List<T>, T>(() => parse(this)).ToArray();
+        }
+
+        /// <summary>
+        /// </summary>
+        /// <param name="parse">
+        /// </param>
+        /// <typeparam name="T">
+        /// </typeparam>
+        /// <returns>
+        /// </returns>
+        public T[] ParseArray<T>(Func<T> parse)
         {
             return this.ParseCollection<List<T>, T>(parse).ToArray();
         }
@@ -335,7 +354,8 @@ namespace Chason
         /// </returns>
         internal decimal ParseDecimal()
         {
-            return decimal.Parse(this.ParseNumber());
+            var s = this.ParseNumber();
+            return decimal.Parse(s);
         }
 
         /// <summary>
@@ -580,7 +600,7 @@ namespace Chason
         /// </returns>
         internal TList ParseCollection<TList, TItem>(Func<TItem> parse) where TList : ICollection<TItem>
         {
-            var array = PropertyParseList<TList>.Instance.New();
+            var array = MemberParseList<TList>.Instance.New();
             this.ConsumeToken(); // [
 
             while (true)
@@ -594,7 +614,9 @@ namespace Chason
                     case Token.SquaredClose:
                         this.ConsumeToken();
                         return array;
-
+                    case Token.SquaredOpen:
+                        this.ConsumeToken();
+                        break;
                     default:
                         array.Add(parse());
                         break;
@@ -788,11 +810,29 @@ namespace Chason
                 case '.':
                     return Token.Number;
 
+                ////case 'I':
+                ////    if (this.json.Length - this.index >= 7 && 
+                ////        this.json[this.index] == 'n' && 
+                ////        this.json[this.index + 1] == 'f' &&
+                ////        this.json[this.index + 2] == 'i' &&
+                ////        this.json[this.index + 3] == 'n' &&
+                ////        this.json[this.index + 4] == 'i' &&
+                ////        this.json[this.index + 5] == 't' &&
+                ////        this.json[this.index + 6] == 'y')
+                ////    {
+                ////        return Token.Number;    
+                ////    }
+
+                ////    break;
                 case ':':
                     return Token.Colon;
 
                 case 'f':
-                    if (this.json.Length - this.index >= 4 && this.json[this.index + 0] == 'a' && this.json[this.index + 1] == 'l' && this.json[this.index + 2] == 's' && this.json[this.index + 3] == 'e')
+                    if (this.json.Length - this.index >= 4 && 
+                        this.json[this.index] == 'a' && 
+                        this.json[this.index + 1] == 'l' && 
+                        this.json[this.index + 2] == 's' && 
+                        this.json[this.index + 3] == 'e')
                     {
                         this.index += 4;
                         return Token.False;
@@ -801,7 +841,10 @@ namespace Chason
                     break;
 
                 case 't':
-                    if (this.json.Length - this.index >= 3 && this.json[this.index + 0] == 'r' && this.json[this.index + 1] == 'u' && this.json[this.index + 2] == 'e')
+                    if (this.json.Length - this.index >= 3 && 
+                        this.json[this.index] == 'r' && 
+                        this.json[this.index + 1] == 'u' && 
+                        this.json[this.index + 2] == 'e')
                     {
                         this.index += 3;
                         return Token.True;
@@ -810,7 +853,10 @@ namespace Chason
                     break;
 
                 case 'n':
-                    if (this.json.Length - this.index >= 3 && this.json[this.index + 0] == 'u' && this.json[this.index + 1] == 'l' && this.json[this.index + 2] == 'l')
+                    if (this.json.Length - this.index >= 3 && 
+                        this.json[this.index] == 'u' && 
+                        this.json[this.index + 1] == 'l' && 
+                        this.json[this.index + 2] == 'l')
                     {
                         this.index += 3;
                         return Token.Null;
@@ -900,8 +946,7 @@ namespace Chason
         /// </exception>
         private T ParseObject<T>()
         {
-            var instanceParser = PropertyParseList<T>.Instance;
-
+            var instanceParser = (MemberParseList<T>)this.parsers.GetOrAdd(typeof(T), _ => new MemberParseList<T>(this.settings));
             var instance = instanceParser.New();
             if (this.LookAhead() != Token.CurlyOpen)
             {

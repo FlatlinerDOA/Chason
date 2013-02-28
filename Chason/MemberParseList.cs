@@ -1,5 +1,5 @@
 ﻿//--------------------------------------------------------------------------------------------------
-// <copyright file="PropertyParseList.cs" company="Andrew Chisholm">
+// <copyright file="MemberParseList.cs" company="Andrew Chisholm">
 //   Copyright (c) 2013 Andrew Chisholm All rights reserved.
 // </copyright>
 //--------------------------------------------------------------------------------------------------
@@ -10,7 +10,6 @@ namespace Chason
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
-    using System.Runtime.Serialization;
 
     /// <summary>
     /// Defines the list of properties and their respective parse methods for a given type.
@@ -18,14 +17,16 @@ namespace Chason
     /// <typeparam name="T">
     /// The type of the instance with properties being parsed
     /// </typeparam>
-    internal sealed class PropertyParseList<T>
+    internal sealed class MemberParseList<T>
     {
+        private readonly ChasonSerializerSettings settings;
+
         #region Static Fields
 
         /// <summary>
         /// The singleton parse list for a given type
         /// </summary>
-        public static readonly PropertyParseList<T> Instance = new PropertyParseList<T>();
+        public static readonly MemberParseList<T> Instance = new MemberParseList<T>(ChasonSerializerSettings.Default);
 
         #endregion
 
@@ -39,45 +40,51 @@ namespace Chason
         /// <summary>
         /// The list of property parsers in the order they are expected to be parsed.
         /// </summary>
-        private readonly List<PropertyParser<T>> sequential;
+        private readonly List<MemberParser<T>> sequential;
 
         /// <summary>
         /// The setter functions
         /// </summary>
-        private readonly IDictionary<string, PropertyParser<T>> setters = new Dictionary<string, PropertyParser<T>>();
+        private readonly IDictionary<string, MemberParser<T>> setters = new Dictionary<string, MemberParser<T>>();
 
         /// <summary>
         /// The enumerator that iterates over the sequential properties.
         /// </summary>
-        private IEnumerator<PropertyParser<T>> iterator;
+        private IEnumerator<MemberParser<T>> iterator;
 
         #endregion
 
         #region Constructors and Destructors
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="PropertyParseList{T}"/> class.
+        /// Initializes a new instance of the <see cref="MemberParseList{T}"/> class.
         /// </summary>
-        public PropertyParseList()
+        public MemberParseList(ChasonSerializerSettings settings)
         {
+            this.settings = settings;
             this.constructor = Constructor().Compile();
             var jsonParameter = Expression.Parameter(typeof(ChasonParser), "j");
             var instanceParameter = Expression.Parameter(typeof(T), "i");
-            var members = from p in typeof(T).GetProperties(BindingFlags.FlattenHierarchy | BindingFlags.Instance | BindingFlags.Public)
-                          from c in p.GetCustomAttributes(true).OfType<DataMemberAttribute>()
-                          where c != null
-                          orderby c.Order, c.Name ?? p.Name
-                          select new {
-                                         Property = p, 
-                                         Contract = c
-                                     };
-
-            this.sequential = new List<PropertyParser<T>>();
+            var members = Reflect.GetObjectMemberContracts(typeof(T));
+            this.sequential = new List<MemberParser<T>>();
             foreach (var m in members)
             {
-                var parser = new PropertyParser<T>(m.Contract, m.Property, jsonParameter, instanceParameter);
+                var memberType = m.Member.MemberType();
+                MemberParser<T> parser;
+                if (settings.CustomStringReaders.ContainsKey(memberType))
+                {
+                    parser = new MemberParser<T>(m.Contract, m.Member, jsonParameter, instanceParameter, settings.CustomStringReaders[memberType]);
+                } 
+                else if (settings.CustomNumberReaders.ContainsKey(memberType))
+                {
+                    parser = new MemberParser<T>(m.Contract, m.Member, jsonParameter, instanceParameter, settings.CustomNumberReaders[memberType]);
+                }
+                else
+                {
+                    parser = new MemberParser<T>(m.Contract, m.Member, jsonParameter, instanceParameter);
+                }
                 this.sequential.Add(parser);
-                this.setters.Add(m.Contract.Name ?? m.Property.Name, parser);
+                this.setters.Add(m.Contract.Name ?? m.Member.Name, parser);
             }
         }
 
@@ -121,7 +128,7 @@ namespace Chason
 
             // TODO: Try resetting the iterator so that rogue unexpected properties don't kill perf.
             // The sequence was unexpected, fall back to a dictionary lookup.
-            PropertyParser<T> p;
+            MemberParser<T> p;
             if (this.setters.TryGetValue(name, out p))
             {
                 p.Parse(parser, instance);

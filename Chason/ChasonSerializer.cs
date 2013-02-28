@@ -198,9 +198,19 @@ namespace Chason
             return ChasonSerializer<T>.Instance.Value.Serialize(data);
         }
 
+        public static string SerializeToString<T>(T data, ChasonSerializerSettings settings)
+        {
+            return new ChasonSerializer<T>(settings).Serialize(data);
+        }
+
         public static T DeserializeFromString<T>(string json)
         {
             return ChasonSerializer<T>.Instance.Value.Deserialize(json);
+        }
+
+        public static T DeserializeFromString<T>(string json, ChasonSerializerSettings settings)
+        {
+            return new ChasonSerializer<T>(settings).Deserialize(json);
         }
     }
 }

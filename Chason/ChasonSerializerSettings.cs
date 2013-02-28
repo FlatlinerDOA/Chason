@@ -92,7 +92,10 @@ namespace Chason
         /// </summary>
         private Func<Type, string> typeNameResolver;
 
-     
+        /// <summary>
+        /// Private property backing field
+        /// </summary>
+        private bool outputFormattedJson;
 
         /// <summary>
         /// 
@@ -104,6 +107,8 @@ namespace Chason
         private readonly Dictionary<Type, string> typeToNameMapping = new Dictionary<Type, string>();
 
         private bool omitNullValues;
+
+        private bool outputCamelCasePropertyNames;
 
         /// <summary>
         /// Initalizes a new instance of the <see cref="ChasonSerializerSettings"/> class.
@@ -336,7 +341,8 @@ namespace Chason
         }
 
         /// <summary>
-        /// Gets or sets a value indicating whether properties values should not be output when serializing if they are null.
+        /// Gets or sets a value indicating whether all data members should not be output when serializing if they are null. 
+        /// Setting this to true overrides the EmitDefaultValue = true setting on [DataMember] attributes
         /// </summary>
         public bool OmitNullValues
         {
@@ -444,6 +450,43 @@ namespace Chason
         /// Gets the custom writer expressions
         /// </summary>
         public IDictionary<Type, Expression> CustomNumberWriters { get; private set; }
+
+
+        /// <summary>
+        /// Gets or sets a value indicating whether the serialized output should be indented and formatted.
+        /// </summary>
+        public bool OutputFormattedJson
+        {
+            get
+            {
+                return this.outputFormattedJson;
+            }
+
+            set
+            {
+                this.EnsureNotReadOnly();
+                this.outputFormattedJson = value;
+            }
+        }
+
+
+        /// <summary>
+        /// Gets or sets a value indicating whether all property names should be output in camel case. 
+        /// Note: This should be coupled with an appropriate PropertyNameComparer
+        /// </summary>
+        public bool OutputCamelCasePropertyNames
+        {
+            get
+            {
+                return this.outputCamelCasePropertyNames;
+            }
+
+            set
+            {
+                this.EnsureNotReadOnly();
+                this.outputCamelCasePropertyNames = value;
+            }
+        }
 
         /// <summary>
         /// Locks the settings so that no further modifications can be made to them.
