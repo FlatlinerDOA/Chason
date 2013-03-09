@@ -12,6 +12,8 @@ namespace Chason
     using System.Linq.Expressions;
     using System.Text;
 
+    using Chason.Extensions;
+
     /// <summary>
     /// Used to configure Chason to your specific needs.
     /// </summary>
@@ -35,7 +37,7 @@ namespace Chason
         /// <summary>
         /// Date time format that uses javascript Date(ticks) object
         /// </summary>
-        public const string JavascriptDateObjectDateTimeFormat = @"\/Date(t)\/";
+        public const string JavascriptDateObjectDateTimeFormat = @"/Date(t)/";
 
         /// <summary>
         /// Gets the default settings
@@ -126,6 +128,10 @@ namespace Chason
             this.CustomStringWriters = new Dictionary<Type, Expression>();
             this.CustomNumberReaders = new Dictionary<Type, Expression>();
             this.CustomNumberWriters = new Dictionary<Type, Expression>();
+            this.CustomLiteralReaders = new Dictionary<Type, Expression>();
+            this.CustomLiteralWriters = new Dictionary<Type, Expression>();
+            this.CustomDictionaryReaders = new Dictionary<Type, Expression>();
+            this.CustomDictionaryWriters = new Dictionary<Type, Expression>();
             this.DateTimeFormat = DefaultDateTimeFormat;
             this.DateTimeOffsetFormat = DefaultDateTimeOffsetFormat;
             this.CultureInfo = CultureInfo.InvariantCulture;
@@ -171,6 +177,10 @@ namespace Chason
             this.CustomStringReaders = new Dictionary<Type, Expression>(serializerSettings.CustomStringReaders);
             this.CustomNumberWriters = new Dictionary<Type, Expression>(serializerSettings.CustomNumberWriters);
             this.CustomNumberReaders = new Dictionary<Type, Expression>(serializerSettings.CustomNumberReaders);
+            this.CustomLiteralWriters = new Dictionary<Type, Expression>(serializerSettings.CustomLiteralWriters);
+            this.CustomLiteralReaders = new Dictionary<Type, Expression>(serializerSettings.CustomLiteralReaders);
+            this.CustomDictionaryWriters = new Dictionary<Type, Expression>(serializerSettings.CustomLiteralWriters);
+            this.CustomDictionaryReaders = new Dictionary<Type, Expression>(serializerSettings.CustomLiteralReaders);
         }
 
         /// <summary>
@@ -273,9 +283,7 @@ namespace Chason
                 this.dateTimeFormatString = value;
                 if (value == JavascriptDateObjectDateTimeFormat)
                 {
-                    this.SetStringFormatter(
-                        dt => "\\/Date(" + dt.Ticks.ToString(this.CultureInfo) + ")\\/",
-                        dt => new DateTime(int.Parse(dt.Substring(7, dt.Length - 10), this.CultureInfo)));
+                    this.SetStringFormatter(dt => dt.ToJavascriptDate(), dt => dt.FromJavascriptDate());
                 }
                 else
                 {
@@ -299,9 +307,16 @@ namespace Chason
             {
                 this.EnsureNotReadOnly();
                 this.dateTimeOffsetFormat = value;
-                this.SetStringFormatter(
-                    dt => dt.ToString(this.DateTimeOffsetFormat, this.CultureInfo),
-                    dt => DateTimeOffset.ParseExact(dt, this.DateTimeOffsetFormat, this.CultureInfo, this.DateTimeStyles));
+                if (value == JavascriptDateObjectDateTimeFormat)
+                {
+                    this.SetStringFormatter(dt => dt.ToJavascriptDateOffset(), dt => dt.FromJavascriptDateOffset());
+                }
+                else
+                {
+                    this.SetStringFormatter(
+                        dt => dt.ToString(this.DateTimeOffsetFormat, this.CultureInfo), 
+                        dt => DateTimeOffset.ParseExact(dt, this.DateTimeOffsetFormat, this.CultureInfo, this.DateTimeStyles));
+                }
             }
         }
 
@@ -420,8 +435,23 @@ namespace Chason
         public void SetStringFormatter<T>(Expression<Func<T, string>> toString, Expression<Func<string, T>> fromString)
         {
             this.EnsureNotReadOnly();
+            this.RemoveFormatter<T>();
             this.CustomStringWriters[typeof(T)] = toString;
             this.CustomStringReaders[typeof(T)] = fromString;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="toLiteral"></param>
+        /// <param name="fromLiteral"></param>
+        public void SetLiteralFormatter<T>(Expression<Func<T, string>> toLiteral, Expression<Func<string, T>> fromLiteral)
+        {
+            this.EnsureNotReadOnly();
+            this.RemoveFormatter<T>();
+            this.CustomLiteralWriters[typeof(T)] = toLiteral;
+            this.CustomLiteralReaders[typeof(T)] = fromLiteral;
         }
 
         /// <summary>
@@ -433,12 +463,13 @@ namespace Chason
         public void SetNumberFormatter<T>(Expression<Func<T, decimal>> toNumber, Expression<Func<decimal, T>> fromNumber)
         {
             this.EnsureNotReadOnly();
+            this.RemoveFormatter<T>();
             this.CustomNumberWriters[typeof(T)] = toNumber;
             this.CustomNumberReaders[typeof(T)] = fromNumber;
         }
 
         /// <summary>
-        /// Override how Chason outputs a particular type to and from Json by specifying the JSON output or parsing the JSON input yourself.
+        /// Override how Chason outputs a particular type to and from Json by specifying the JSON dictionary values to output or parsing the dictionary inputs yourself.
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="toDictionary">Expression to convert a instance of a type to the JSON literal string. Note: You must output the Quotes or Curly braces yourself if your type is string or object based etc.</param>
@@ -446,10 +477,27 @@ namespace Chason
         public void SetDictionaryFormatter<T>(Expression<Func<T, IDictionary<string, string>>> toDictionary, Expression<Func<IDictionary<string, string>, T>> fromDictionary)
         {
             this.EnsureNotReadOnly();
-            this.CustomStringWriters[typeof(T)] = toDictionary;
-            this.CustomStringReaders[typeof(T)] = fromDictionary;
+            this.RemoveFormatter<T>();
+            this.CustomDictionaryWriters[typeof(T)] = toDictionary;
+            this.CustomDictionaryReaders[typeof(T)] = fromDictionary;
         }
 
+        /// <summary>
+        /// Removes any formatter for a given type
+        /// </summary>
+        /// <typeparam name="T">The type to be removed from the formatters.</typeparam>
+        public void RemoveFormatter<T>()
+        {
+            var type = typeof(T);
+            this.CustomDictionaryReaders.Remove(type);
+            this.CustomDictionaryWriters.Remove(type);
+            this.CustomLiteralReaders.Remove(type);
+            this.CustomLiteralWriters.Remove(type);
+            this.CustomNumberReaders.Remove(type);
+            this.CustomNumberWriters.Remove(type);
+            this.CustomStringReaders.Remove(type);
+            this.CustomStringWriters.Remove(type);
+        }
         /// <summary>
         /// Gets the custom reader expressions
         /// </summary>
@@ -470,6 +518,24 @@ namespace Chason
         /// </summary>
         public IDictionary<Type, Expression> CustomNumberWriters { get; private set; }
 
+        /// <summary>
+        /// Gets the custom reader expressions
+        /// </summary>
+        public IDictionary<Type, Expression> CustomLiteralReaders { get; private set; }
+
+        /// <summary>
+        /// Gets the custom writer expressions
+        /// </summary>
+        public IDictionary<Type, Expression> CustomLiteralWriters { get; private set; }
+        /// <summary>
+        /// Gets the custom reader expressions
+        /// </summary>
+        public IDictionary<Type, Expression> CustomDictionaryReaders { get; private set; }
+
+        /// <summary>
+        /// Gets the custom writer expressions
+        /// </summary>
+        public IDictionary<Type, Expression> CustomDictionaryWriters { get; private set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether the serialized output should be indented and formatted.
@@ -527,6 +593,10 @@ namespace Chason
                 this.CustomStringWriters = new ReadOnlyDictionary<Type, Expression>(this.CustomStringWriters);
                 this.CustomNumberReaders = new ReadOnlyDictionary<Type, Expression>(this.CustomNumberReaders);
                 this.CustomNumberWriters = new ReadOnlyDictionary<Type, Expression>(this.CustomNumberWriters);
+                this.CustomLiteralReaders = new ReadOnlyDictionary<Type, Expression>(this.CustomLiteralReaders);
+                this.CustomLiteralWriters = new ReadOnlyDictionary<Type, Expression>(this.CustomLiteralWriters);
+                this.CustomDictionaryReaders = new ReadOnlyDictionary<Type, Expression>(this.CustomDictionaryReaders);
+                this.CustomDictionaryWriters = new ReadOnlyDictionary<Type, Expression>(this.CustomDictionaryWriters);
             }
         }
 

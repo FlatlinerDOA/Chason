@@ -286,6 +286,14 @@ namespace Chason
             {
                 yield return this.WriteObjectAsNumber(getterCall, writer, this.settings.CustomNumberWriters[type]);
             }
+            else if (this.settings.CustomLiteralWriters.ContainsKey(type))
+            {
+                yield return this.WriteObjectAsLiteral(getterCall, writer, this.settings.CustomLiteralWriters[type]);
+            }
+            else if (this.settings.CustomDictionaryWriters.ContainsKey(type))
+            {
+                yield return this.WriteObjectAsDictionary(getterCall, type, writer, depth, this.settings.CustomDictionaryWriters[type]);
+            }
             else if (type.IsArray)
             {
                 yield return this.WriteArray(getterCall, type, writer, depth);
@@ -537,6 +545,50 @@ namespace Chason
         {
             var toDecimal = convertToDecimal == null ? Expression.Convert(getterCall, typeof(decimal)) : (Expression)Expression.Invoke(convertToDecimal, new Expression[] { getterCall });
             return Expression.Call(writer, "Write", new Type[0], new Expression[] { toDecimal });
+        }
+
+        /// <summary>
+        /// </summary>
+        /// <param name="member">
+        /// </param>
+        /// <param name="instance">
+        /// </param>
+        /// <param name="writer">
+        /// </param>
+        /// <param name="convertToDecimal">
+        /// </param>
+        /// <returns>
+        /// </returns>
+        private Expression WriteObjectAsLiteral(
+            Expression getterCall,
+            ParameterExpression writer,
+            Expression convertToString = null)
+        {
+            var toString = convertToString == null ? Expression.Convert(getterCall, typeof(string)) : (Expression)Expression.Invoke(convertToString, new Expression[] { getterCall });
+            return Expression.Call(writer, ChasonSerializer.WriteStringMethod, new Expression[] { toString });
+        }
+
+        /// <summary>
+        /// </summary>
+        /// <param name="member">
+        /// </param>
+        /// <param name="instance">
+        /// </param>
+        /// <param name="writer">
+        /// </param>
+        /// <param name="convertToDecimal">
+        /// </param>
+        /// <returns>
+        /// </returns>
+        private Expression WriteObjectAsDictionary(
+            Expression getterCall,
+            Type type,
+            ParameterExpression writer,
+            int depth,
+            Expression convertToDictionary = null)
+        {
+            var toDictionary = convertToDictionary == null ? Expression.Convert(getterCall, typeof(IDictionary<string, string>).MakeGenericType(type.GetGenericArguments())) : (Expression)Expression.Invoke(convertToDictionary, new Expression[] { getterCall });
+            return this.WriteDictionary(toDictionary, type, writer, depth);
         }
 
         /// <summary>

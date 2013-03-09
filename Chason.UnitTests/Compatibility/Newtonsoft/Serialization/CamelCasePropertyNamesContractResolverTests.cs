@@ -58,7 +58,7 @@ namespace Newtonsoft.Json.Tests.Serialization
                                                                    PropertyNameComparer = StringComparer.OrdinalIgnoreCase,
                                                                    OutputFormattedJson = true,
                                                                    OutputCamelCasePropertyNames = true,
-                                                                   DateTimeFormat = @"\/Date(t)\/"
+                                                                   DateTimeFormat = ChasonSerializerSettings.JavascriptDateObjectDateTimeFormat
                                                                });
 
       json.Should().Be(@"{
@@ -70,6 +70,9 @@ namespace Newtonsoft.Json.Tests.Serialization
       Person deserializedPerson = ChasonSerializer.DeserializeFromString<Person>(json, new ChasonSerializerSettings
                                                                         {
                                                                             PropertyNameComparer = StringComparer.OrdinalIgnoreCase,
+                                                                            OutputFormattedJson = true,
+                                                                            OutputCamelCasePropertyNames = true,
+                                                                            DateTimeFormat = ChasonSerializerSettings.JavascriptDateObjectDateTimeFormat
                                                                         });
 
       Assert.AreEqual(person.BirthDate, deserializedPerson.BirthDate);

@@ -37,16 +37,16 @@ namespace Newtonsoft.Json.Tests.TestObjects
   public class Person
   {
     // "John Smith"
-    [DataMember]
+    [DataMember(Order=0)]
     public string Name { get; set; }
 
     // "2000-12-15T22:11:03"
-    [DataMember]
+    [DataMember(Order = 1)]
     //[JsonConverter(typeof(IsoDateTimeConverter))]
     public DateTime BirthDate { get; set; }
 
     // new Date(976918263055)
-    [DataMember]
+    [DataMember(Order = 2)]
     //[JsonConverter(typeof(JavaScriptDateTimeConverter))]
     public DateTime LastModified { get; set; }
 
