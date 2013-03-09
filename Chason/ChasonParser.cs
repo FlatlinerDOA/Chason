@@ -221,22 +221,47 @@ namespace Chason
             ////var methodCall = GetParseMethodCall(typeof(T), p);
             ////var lambda = Expression.Lambda<Func<ChasonParser, T>>(methodCall, p).Compile();
             ////return lambda(this);
-            if (typeof(T).IsGenericType)
+            var type = typeof(T);
+
+            // TODO: Cache these Type to Expression mappings across parser instances.
+            if (this.settings.CustomStringReaders.ContainsKey(type))
             {
-                var generic = typeof(T).GetGenericTypeDefinition();
-                if (typeof(ICollection<>).IsAssignableFrom(generic))
-                {
-                    var itemType = typeof(T).GetGenericArguments()[0];
-                    var m = this.GetType().GetMethod("ParseCollection");
-                    var arrayParse = m.MakeGenericMethod(typeof(T), itemType);
-                    return (T)arrayParse.Invoke(this, new object[0]);
-                }
-            } 
-            else if (typeof(T).IsArray)
+                return ((Expression<Func<string, T>>)this.settings.CustomStringReaders[type]).Compile()(this.ParseString());
+            }
+
+            if (this.settings.CustomNumberReaders.ContainsKey(type))
             {
-                var itemType = typeof(T).GetElementType();
+                return ((Expression<Func<string, T>>)this.settings.CustomNumberReaders[type]).Compile()(this.ParseNumber());
+            }
+            
+            ////if (this.settings.CustomLiteralReaders.ContainsKey(type))
+            ////{
+            ////}
+            
+            ////if (this.settings.CustomDictionaryReaders.ContainsKey(type))
+            ////{
+            ////}
+            
+            if (type.IsArray)
+            {
+                var itemType = type.GetElementType();
                 var m = this.GetType().GetMethod("ParseArray");
+                var arrayParse = m.MakeGenericMethod(type, itemType);
+                return (T)arrayParse.Invoke(this, new object[0]);
+            } 
+            
+            if (type.IsCollection())
+            {
+                var itemType = type.GetGenericArguments()[0];
+                var m = this.GetType().GetMethod("ParseCollection");
                 var arrayParse = m.MakeGenericMethod(typeof(T), itemType);
+                return (T)arrayParse.Invoke(this, new object[0]);
+            }
+
+            if (type.IsDictionary())
+            {
+                var m = this.GetType().GetMethod("ParseDictionary");
+                var arrayParse = m.MakeGenericMethod(type);
                 return (T)arrayParse.Invoke(this, new object[0]);
             }
 

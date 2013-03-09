@@ -87,5 +87,17 @@ namespace Chason
             return typeof(IDictionary<,>).IsAssignableFrom(type.GetGenericTypeDefinition()) || 
                 type.GetInterfaces().Any(t => typeof(IDictionary<,>).IsAssignableFrom(t.GetGenericTypeDefinition()));
         }
+
+        public static bool IsCollection(this Type type)
+        {
+            if (!type.IsGenericType)
+            {
+                return false;
+            }
+            
+            var generic = type.GetGenericTypeDefinition();
+            return typeof(ICollection<>).IsAssignableFrom(generic) ||
+                type.GetInterfaces().Any(t => typeof(ICollection<>).IsAssignableFrom(t.GetGenericTypeDefinition()));
+        }
     }
 }
