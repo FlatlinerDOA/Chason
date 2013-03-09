@@ -39,6 +39,7 @@
     <Compile Include="ChasonSerializer.cs" />
     <Compile Include="ChasonSerializer{T}.cs" />
     <Compile Include="ChasonSerializerSettings.cs" />
+    <Compile Include="Extensions\StringExtensions.cs" />
     <Compile Include="GenericJsonParser.cs" />
     <Compile Include="ChasonParser.cs" />
     <Compile Include="MemberContractMap.cs" />

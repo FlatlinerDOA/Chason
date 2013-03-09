@@ -23,24 +23,24 @@ namespace Chason
         /// <param name="info">The property info</param>
         /// <param name="parserParameter">An expression that will reference the <see cref="ChasonParser"/> instance, passed as a parameter</param>
         /// <param name="instanceParameter">An expression that will reference the instance the property is to be assigned to, passed as a parameter</param>
-        public MemberParser(DataMemberAttribute dataMember, MemberInfo info, ParameterExpression parserParameter, ParameterExpression instanceParameter)
+        public MemberParser(MemberContractMap memberContract, ParameterExpression parserParameter, ParameterExpression instanceParameter)
         {
-            this.Name = dataMember.Name ?? info.Name;
-            this.Sequence = dataMember.Order;
-            var memberType = info.MemberType();
+            this.Name = memberContract.Name;
+            this.Sequence = memberContract.SortOrder;
+            var memberType = memberContract.Member.MemberType();
             var parseCall = ChasonParser.GetParseMethodCall(memberType, parserParameter);
-            this.SetExpression = Expression.Assign(Expression.MakeMemberAccess(instanceParameter, info), parseCall);
+            this.SetExpression = Expression.Assign(Expression.MakeMemberAccess(instanceParameter, memberContract.Member), parseCall);
             this.Parse = Expression.Lambda<Action<ChasonParser, T>>(this.SetExpression, parserParameter, instanceParameter).Compile();
         }
 
-        public MemberParser(DataMemberAttribute dataMember, MemberInfo info, ParameterExpression parserParameter, ParameterExpression instanceParameter, Expression readExpression)
+        public MemberParser(MemberContractMap memberContract, ParameterExpression parserParameter, ParameterExpression instanceParameter, Expression readExpression)
         {
-            this.Name = dataMember.Name ?? info.Name;
-            this.Sequence = dataMember.Order;
+            this.Name = memberContract.Name;
+            this.Sequence = memberContract.SortOrder;
             var readAsType = ((LambdaExpression)readExpression).Parameters[0].Type;
             var parseCall = ChasonParser.GetParseMethodCall(readAsType, parserParameter);
-            
-            this.SetExpression = Expression.Assign(Expression.MakeMemberAccess(instanceParameter, info), Expression.Invoke(readExpression, parseCall));
+
+            this.SetExpression = Expression.Assign(Expression.MakeMemberAccess(instanceParameter, memberContract.Member), Expression.Invoke(readExpression, parseCall));
             ////this.SetExpression = Expression.Invoke(setExpression, new Expression[] { instanceParameter });
             this.Parse = Expression.Lambda<Action<ChasonParser, T>>(this.SetExpression, parserParameter, instanceParameter).Compile();
         }

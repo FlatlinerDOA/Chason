@@ -5,6 +5,8 @@
 //--------------------------------------------------------------------------------------------------
 namespace Chason.UnitTests.Serializing.Formatting
 {
+    using Chason.Extensions;
+
     using FluentAssertions;
 
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -15,37 +17,37 @@ namespace Chason.UnitTests.Serializing.Formatting
         [TestMethod]
         public void CamelCasingAbbreviationsUpToFourCharactersLong()
         {
-            ChasonSerializer.CamelCase("ACLSettings").Should().Be("aclSettings");
+            StringExtensions.CamelCase("ACLSettings").Should().Be("aclSettings");
         }
 
         [TestMethod]
         public void CamelCasingASingleWord()
         {
-            ChasonSerializer.CamelCase("Test").Should().Be("test");
+            StringExtensions.CamelCase("Test").Should().Be("test");
         }
 
         [TestMethod]
         public void CamelCasingAllCapitals()
         {
-            ChasonSerializer.CamelCase("TEST").Should().Be("test");
+            StringExtensions.CamelCase("TEST").Should().Be("test");
         }
 
         [TestMethod]
         public void CamelCasingPascalCasing()
         {
-            ChasonSerializer.CamelCase("PascalCasing").Should().Be("pascalCasing");
+            StringExtensions.CamelCase("PascalCasing").Should().Be("pascalCasing");
         }
 
         [TestMethod]
         public void CamelCasingShortPascalCasing()
         {
-            ChasonSerializer.CamelCase("MyCasing").Should().Be("myCasing");
+            StringExtensions.CamelCase("MyCasing").Should().Be("myCasing");
         }
 
         [TestMethod]
         public void CamelCasingSomethingAlreadyCamelCased()
         {
-            ChasonSerializer.CamelCase("camelCasing").Should().Be("camelCasing");
+            StringExtensions.CamelCase("camelCasing").Should().Be("camelCasing");
         }
     }
 }

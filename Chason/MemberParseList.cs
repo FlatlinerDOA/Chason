@@ -73,18 +73,19 @@ namespace Chason
                 MemberParser<T> parser;
                 if (settings.CustomStringReaders.ContainsKey(memberType))
                 {
-                    parser = new MemberParser<T>(m.Contract, m.Member, jsonParameter, instanceParameter, settings.CustomStringReaders[memberType]);
+                    parser = new MemberParser<T>(m, jsonParameter, instanceParameter, settings.CustomStringReaders[memberType]);
                 } 
                 else if (settings.CustomNumberReaders.ContainsKey(memberType))
                 {
-                    parser = new MemberParser<T>(m.Contract, m.Member, jsonParameter, instanceParameter, settings.CustomNumberReaders[memberType]);
+                    parser = new MemberParser<T>(m, jsonParameter, instanceParameter, settings.CustomNumberReaders[memberType]);
                 }
                 else
                 {
-                    parser = new MemberParser<T>(m.Contract, m.Member, jsonParameter, instanceParameter);
+                    parser = new MemberParser<T>(m, jsonParameter, instanceParameter);
                 }
+
                 this.sequential.Add(parser);
-                this.setters.Add(m.Contract.Name ?? m.Member.Name, parser);
+                this.setters.Add(m.Name, parser);
             }
         }
 

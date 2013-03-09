@@ -14,6 +14,8 @@ namespace Chason
     using System.Runtime.Serialization;
     using System.Text;
 
+    using Chason.Extensions;
+
     /// <summary>
     /// A fast and lightweight strongly typed JSON serializer.
     /// </summary>
@@ -58,7 +60,8 @@ namespace Chason
         {
             settings.Lock();
             this.settings = settings;
-            this.serializeMethod = this.WriteObjectBlock().Compile();
+            var block = this.WriteObjectBlock();
+            this.serializeMethod = block.Compile();
         }
 
         #endregion
@@ -156,18 +159,15 @@ namespace Chason
 
         /// <summary>
         /// </summary>
-        /// <param name="member">
-        /// </param>
-        /// <param name="instance">
+        /// <param name="getterCall">
         /// </param>
         /// <param name="writer">
         /// </param>
         /// <returns>
         /// </returns>
-        private Expression WriteLiteral(MemberInfo member, Type memberType, ParameterExpression instance, ParameterExpression writer)
+        private Expression WriteLiteral(Expression getterCall, Type memberType, ParameterExpression writer)
         {
-            var getterCall = Expression.MakeMemberAccess(instance, member);
-            var writeMethod = typeof(TextWriter).GetMethod("Write", new[] { member.ReflectedType });
+            var writeMethod = typeof(TextWriter).GetMethod("Write", new[] { memberType });
             var paramType = writeMethod.GetParameters().First().ParameterType;
             if (paramType != memberType)
             {
@@ -177,17 +177,26 @@ namespace Chason
             return Expression.Call(writer, writeMethod, new Expression[] { getterCall });
         }
 
-
-        private Expression WriteBoolean(MemberInfo member, ParameterExpression instance, ParameterExpression writer)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="getterCall"></param>
+        /// <param name="writer"></param>
+        /// <returns></returns>
+        private Expression WriteBoolean(Expression getterCall, ParameterExpression writer)
         {
-            var getterCall = Expression.MakeMemberAccess(instance, member);
             var convert = Expression.Condition(getterCall, Expression.Constant("true"), Expression.Constant("false"));
             return Expression.Call(writer, ChasonSerializer.WriteStringMethod, new Expression[] { convert });
         }
 
-        private Expression WriteNullableBoolean(MemberInfo member, ParameterExpression instance, ParameterExpression writer)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="getterCall"></param>
+        /// <param name="writer"></param>
+        /// <returns></returns>
+        private Expression WriteNullableBoolean(Expression getterCall, ParameterExpression writer)
         {
-            var getterCall = Expression.MakeMemberAccess(instance, member);
             var toString = Expression.Condition(Expression.Property(getterCall, "Value"), Expression.Constant("true"), Expression.Constant("false"));
             var coalesce = Expression.Condition(
                 Expression.Equal(getterCall, Expression.Constant(null)),
@@ -200,17 +209,14 @@ namespace Chason
 
         /// <summary>
         /// </summary>
-        /// <param name="member">
-        /// </param>
-        /// <param name="instance">
+        /// <param name="getterCall">
         /// </param>
         /// <param name="writer">
         /// </param>
         /// <returns>
         /// </returns>
-        private Expression WriteNullableLiteral(MemberInfo member, ParameterExpression instance, ParameterExpression writer, Expression convertToString = null)
+        private Expression WriteNullableLiteral(Expression getterCall, ParameterExpression writer, Expression convertToString = null)
         {
-            var getterCall = Expression.MakeMemberAccess(instance, member);
             var toString = convertToString == null ?
                 Expression.Call(getterCall, "ToString", new Type[0]) :
                 (Expression)Expression.Invoke(convertToString, new Expression[] { Expression.Property(getterCall, "Value") });
@@ -221,30 +227,19 @@ namespace Chason
 
             return Expression.Call(writer, ChasonSerializer.WriteStringMethod, new Expression[] { coalesce });
         }
-        /// <summary>
-        /// </summary>
-        /// <param name="instance">
-        /// </param>
-        /// <param name="writer">
-        /// </param>
-        /// <returns>
-        /// </returns>
-        private IEnumerable<Expression> WriteObject(ParameterExpression instance, ParameterExpression writer)
-        {
-            return this.WriteObject(typeof(T), instance, writer);
-        }
 
-        private IEnumerable<Expression> WriteObject(Type objectType, ParameterExpression instance, ParameterExpression writer)
+        private IEnumerable<Expression> WriteObject(Type objectType, Expression instance, ParameterExpression writer, int depth)
         {
             var members = Reflect.GetObjectMemberContracts(objectType);
 
             bool first = true;
             yield return this.WriteConstant("{", writer);
+
             foreach (var m in members)
             {
-                yield return this.WriteStartMember(m.Member, m.Contract, first, writer);
+                yield return this.WriteStartMember(m, first, writer, depth + 1);
 
-                foreach (var expression in this.WritePropertyValue(m.Member, instance, writer))
+                foreach (var expression in this.WriteMemberValue(m.Member, instance, writer, depth + 1))
                 {
                     yield return expression;
                 }
@@ -252,35 +247,52 @@ namespace Chason
                 first = false;
             }
 
-            yield return this.WriteConstant("}", writer);
+            if (this.settings.OutputFormattedJson)
+            {
+                yield return this.WriteConstant(StringExtensions.LineFeedIndent(depth) + "}", writer);
+            }
+            else
+            {
+                yield return this.WriteConstant("}", writer);
+            }
         }
 
-        private IEnumerable<Expression> WritePropertyValue(MemberInfo member, ParameterExpression instance, ParameterExpression writer)
+        private IEnumerable<Expression> WriteMemberValue(MemberInfo member, Expression instance, ParameterExpression writer, int depth)
         {
             var type = member.MemberType();
+            var getterCall = Expression.MakeMemberAccess(instance, member);
+            return this.WriteValue(getterCall, type, writer, depth);
+        }
+
+        private IEnumerable<Expression> WriteValue(Expression getterCall, Type type, ParameterExpression writer, int depth)
+        {
             if (type == typeof(string))
             {
-                yield return this.WriteString(member, instance, writer);
+                yield return this.WriteString(getterCall, writer);
             }
             else if (type == typeof(bool))
             {
-                yield return this.WriteBoolean(member, instance, writer);
+                yield return this.WriteBoolean(getterCall, writer);
             }
             else if (ChasonSerializer.LiteralTypes.Contains(type))
             {
-                yield return this.WriteLiteral(member, type, instance, writer);
+                yield return this.WriteLiteral(getterCall, type, writer);
             }
             else if (this.settings.CustomStringWriters.ContainsKey(type))
             {
-                yield return this.WriteObjectAsString(member, instance, writer, this.settings.CustomStringWriters[type]);
+                yield return this.WriteObjectAsString(getterCall, writer, this.settings.CustomStringWriters[type]);
             } 
             else if (this.settings.CustomNumberWriters.ContainsKey(type))
             {
-                yield return this.WriteObjectAsNumber(member, instance, writer, this.settings.CustomNumberWriters[type]);
+                yield return this.WriteObjectAsNumber(getterCall, writer, this.settings.CustomNumberWriters[type]);
             }
             else if (type.IsArray)
             {
-                yield return this.WriteArray(member, type, instance, writer);
+                yield return this.WriteArray(getterCall, type, writer, depth);
+            }
+            else if (type.IsDictionary())
+            {
+                yield return this.WriteDictionary(getterCall, type, writer, depth);
             }
             else
             {
@@ -289,28 +301,28 @@ namespace Chason
                 {
                     if (elementType == typeof(bool))
                     {
-                        yield return this.WriteNullableBoolean(member, instance, writer);
+                        yield return this.WriteNullableBoolean(getterCall, writer);
                     } 
                     else if (ChasonSerializer.LiteralTypes.Contains(elementType))
                     {
-                        yield return this.WriteNullableLiteral(member, instance, writer);
+                        yield return this.WriteNullableLiteral(getterCall, writer);
                     }
                     else if (this.settings.CustomStringWriters.ContainsKey(elementType))
                     {
-                        yield return this.WriteNullableObjectAsString(member, instance, writer, this.settings.CustomStringWriters[elementType]);
+                        yield return this.WriteNullableObjectAsString(getterCall, writer, this.settings.CustomStringWriters[elementType]);
                     }
                     else if (this.settings.CustomNumberWriters.ContainsKey(elementType))
                     {
-                        yield return this.WriteNullableObjectAsNumber(member, instance, writer, this.settings.CustomNumberWriters[elementType]);
+                        yield return this.WriteNullableObjectAsNumber(getterCall, writer, this.settings.CustomNumberWriters[elementType]);
                     }
                     else
                     {
-                        yield return this.WriteNullableObjectAsString(member, instance, writer, null);
+                        yield return this.WriteNullableObjectAsString(getterCall, writer, null);
                     }
                 }
                 else
                 {
-                    foreach (var ex in this.WriteObject(type, instance, writer))
+                    foreach (var ex in this.WriteObject(type, getterCall, writer, depth))
                     {
                         yield return ex;
                     }
@@ -318,11 +330,30 @@ namespace Chason
             }
         }
 
-        private Expression WriteArray(MemberInfo member, Type memberType, ParameterExpression instance, ParameterExpression writer)
+        private Expression WriteDictionary(Expression getterCall, Type memberType, ParameterExpression writer, int depth)
+        {
+            var elementTypes = memberType.GetGenericArguments();
+            var dictionaryType = typeof(IDictionary<,>).MakeGenericType(elementTypes);
+            var writeMethod = this.GetType().GetMethod("WriteDictionaryValues", BindingFlags.Public | BindingFlags.Static).MakeGenericMethod(elementTypes);
+            var writeValues = Expression.Call(
+                null,
+                writeMethod,
+                new Expression[]
+                {
+                    Expression.Convert(getterCall, dictionaryType),
+                    writer,
+                    Expression.Constant(this.settings.OutputCamelCasePropertyNames),
+                    Expression.Constant(this.settings.OutputFormattedJson),
+                    Expression.Constant(depth)
+                });
+
+            return writeValues;
+        }
+
+        private Expression WriteArray(Expression getterCall, Type memberType, ParameterExpression writer, int depth)
         {
             var elementType = memberType.GetElementType();
             var enumerableType = typeof(IEnumerable<>).MakeGenericType(elementType);
-            var getterCall = Expression.MakeMemberAccess(instance, member);
             var writeMethod = this.GetType().GetMethod("WriteArrayValues", BindingFlags.Public | BindingFlags.Static).MakeGenericMethod(elementType);
             var writeValues = Expression.Call(
                 null, 
@@ -330,13 +361,67 @@ namespace Chason
                 new Expression[]
                 {
                     Expression.Convert(getterCall, enumerableType),
-                    writer
+                    writer,
+                    Expression.Constant(this.settings.OutputFormattedJson),
+                    Expression.Constant(depth)
                 });
 
             return writeValues;
         }
 
-        public static void WriteArrayValues<TValue>(IEnumerable<TValue> values, TextWriter writer)
+        public static void WriteDictionaryValues<TKey, TValue>(IDictionary<TKey, TValue> values, TextWriter writer, bool camelCase, bool formatted, int depth)
+        {
+            if (values == null)
+            {
+                writer.Write("null");
+                return;
+            }
+
+            writer.Write("{");
+
+            bool first = true;
+            foreach (var value in values)
+            {
+                if (!first)
+                {
+                    writer.Write(",");
+                }
+
+                if (formatted)
+                {
+                    writer.Write(StringExtensions.LineFeedIndent(depth + 1));
+                }
+
+                first = false;
+                if (!ReferenceEquals(value.Key, null))
+                {
+                    writer.Write(camelCase ? value.Key.ToString().CamelCase().JsonEscapeString() : value.Key.ToString().JsonEscapeString());
+                    writer.Write(formatted ? ": " : ":");
+
+                    if (ReferenceEquals(value.Value, null))
+                    {
+                        writer.Write("null");
+                    }
+                    else if (typeof(TValue) == typeof(string))
+                    {
+                        writer.Write(value.Value.ToString().JsonEscapeString());
+                    }
+                    else
+                    {
+                        writer.Write(value);
+                    }
+                }
+            }
+
+            if (formatted)
+            {
+                writer.Write(StringExtensions.LineFeedIndent(depth));
+            }
+
+            writer.Write("}");
+        }
+
+        public static void WriteArrayValues<TValue>(IEnumerable<TValue> values, TextWriter writer, bool formatted, int depth)
         {
             if (values == null)
             {
@@ -345,12 +430,18 @@ namespace Chason
             }
 
             writer.Write("[");
+
             bool first = true;
             foreach (var value in values)
             {
                 if (!first)
                 {
                     writer.Write(",");
+                }
+
+                if (formatted)
+                {
+                    writer.Write(StringExtensions.LineFeedIndent(depth + 1));
                 }
 
                 first = false;
@@ -360,7 +451,7 @@ namespace Chason
                 }
                 else if (typeof(TValue) == typeof(string))
                 {
-                    writer.Write(ChasonSerializer.EscapeString(value.ToString()));
+                    writer.Write(value.ToString().JsonEscapeString());
                 }
                 else
                 {
@@ -368,14 +459,17 @@ namespace Chason
                 }
             }
 
+            if (formatted)
+            {
+                writer.Write(StringExtensions.LineFeedIndent(depth));
+            }
+
             writer.Write("]");
         }
 
         /// <summary>
         /// </summary>
-        /// <param name="member">
-        /// </param>
-        /// <param name="instance">
+        /// <param name="getterCall">
         /// </param>
         /// <param name="writer">
         /// </param>
@@ -384,12 +478,10 @@ namespace Chason
         /// <returns>
         /// </returns>
         private Expression WriteNullableObjectAsString(
-            MemberInfo member,
-            ParameterExpression instance,
+            Expression getterCall,
             ParameterExpression writer,
             Expression convertToString)
         {
-            var getterCall = Expression.MakeMemberAccess(instance, member);
             var toString = convertToString == null ? 
                 Expression.Call(getterCall, "ToString", new Type[0]) : 
                 (Expression)Expression.Invoke(convertToString, new Expression[] { Expression.Property(getterCall, "Value") });
@@ -398,8 +490,7 @@ namespace Chason
                 Expression.Constant("null"), 
                 toString);
 
-            var escapeMethod = typeof(ChasonSerializer).GetMethod("EscapeString", new[] { typeof(string) });
-            var escapeCall = Expression.Call(null, escapeMethod, new Expression[] { coalesce });
+            var escapeCall = coalesce.CallJsonEscapeString();
             var result = Expression.Call(writer, ChasonSerializer.WriteStringMethod, new Expression[] { escapeCall });
             return result;
         }
@@ -417,16 +508,13 @@ namespace Chason
         /// <returns>
         /// </returns>
         private Expression WriteObjectAsString(
-            MemberInfo member, 
-            ParameterExpression instance, 
+            Expression getterCall,
             ParameterExpression writer,
             Expression convertToString)
         {
-            var getterCall = Expression.MakeMemberAccess(instance, member);
             var toString = convertToString == null ? Expression.Call(getterCall, "ToString", new Type[0]) : (Expression)Expression.Invoke(convertToString, new Expression[] { getterCall });
-            
-            var escapeMethod = typeof(ChasonSerializer).GetMethod("EscapeString", new[] { typeof(string) });
-            var escapeCall = Expression.Call(null, escapeMethod, new Expression[] { toString });
+
+            var escapeCall = toString.CallJsonEscapeString();
             return Expression.Call(writer, ChasonSerializer.WriteStringMethod, new Expression[] { escapeCall });
         }
 
@@ -443,23 +531,27 @@ namespace Chason
         /// <returns>
         /// </returns>
         private Expression WriteObjectAsNumber(
-            MemberInfo member,
-            ParameterExpression instance,
+            Expression getterCall,
             ParameterExpression writer,
             Expression convertToDecimal = null)
         {
-            var getterCall = Expression.MakeMemberAccess(instance, member);
             var toDecimal = convertToDecimal == null ? Expression.Convert(getterCall, typeof(decimal)) : (Expression)Expression.Invoke(convertToDecimal, new Expression[] { getterCall });
             return Expression.Call(writer, "Write", new Type[0], new Expression[] { toDecimal });
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="member"></param>
+        /// <param name="instance"></param>
+        /// <param name="writer"></param>
+        /// <param name="convertToDecimal"></param>
+        /// <returns></returns>
         private Expression WriteNullableObjectAsNumber(
-            MemberInfo member,
-            ParameterExpression instance,
+            Expression getterCall,
             ParameterExpression writer,
             Expression convertToDecimal = null)
         {
-            var getterCall = Expression.MakeMemberAccess(instance, member);
             var toDecimal = convertToDecimal == null ?
                 Expression.Convert(getterCall, typeof(decimal)) :
                 (Expression)Expression.Invoke(convertToDecimal, new Expression[] { Expression.Property(getterCall, "Value") });
@@ -480,7 +572,7 @@ namespace Chason
         {
             var instance = Expression.Parameter(typeof(T), "i");
             var writer = Expression.Parameter(typeof(TextWriter), "b");
-            var block = Expression.Block(this.WriteObject(instance, writer));
+            var block = Expression.Block(this.WriteValue(instance, typeof(T), writer, 0));
             return (Expression<Action<T, TextWriter>>)Expression.Lambda(block, instance, writer);
         }
 
@@ -497,20 +589,25 @@ namespace Chason
         /// </param>
         /// <returns>
         /// </returns>
-        private Expression WriteStartMember(
-            MemberInfo property, DataMemberAttribute contract, bool first, ParameterExpression writer)
+        private Expression WriteStartMember(MemberContractMap memberContract, bool first, ParameterExpression writer, int depth)
         {
-            var memberName = contract.Name ?? property.Name;
+            var memberName = memberContract.Name;
             if (this.settings.OutputCamelCasePropertyNames)
             {
-                memberName = ChasonSerializer.CamelCase(memberName);
+                memberName = memberName.CamelCase();
             }
 
-            var buffer = first
-                             ? "\"" + memberName + "\":"
-                             : ",\"" + memberName + "\":";
+            Expression buffer;
+            if (this.settings.OutputFormattedJson)
+            {
+                buffer = Expression.Constant(first ? StringExtensions.LineFeedIndent(depth) + "\"" + memberName + "\": " : "," + StringExtensions.LineFeedIndent(depth) + "\"" + memberName + "\": ");
+            }
+            else
+            {
+                buffer = Expression.Constant(first ? "\"" + memberName + "\":" : ",\"" + memberName + "\":");
+            }
 
-            return Expression.Call(writer, ChasonSerializer.WriteStringMethod, new Expression[] { Expression.Constant(buffer) });
+            return Expression.Call(writer, ChasonSerializer.WriteStringMethod, new Expression[] { buffer });
         }
 
         /// <summary>
@@ -523,11 +620,9 @@ namespace Chason
         /// </param>
         /// <returns>
         /// </returns>
-        private Expression WriteString(MemberInfo member, ParameterExpression instance, ParameterExpression writer)
+        private Expression WriteString(Expression getterCall, ParameterExpression writer)
         {
-            var getterCall = Expression.MakeMemberAccess(instance, member);
-            var escapeMethod = typeof(ChasonSerializer).GetMethod("EscapeString", new[] { typeof(string) });
-            var escapeCall = Expression.Call(null, escapeMethod, new Expression[] { getterCall });
+            var escapeCall = getterCall.CallJsonEscapeString();
             return Expression.Call(writer, ChasonSerializer.WriteStringMethod, new Expression[] { escapeCall });
         }
 

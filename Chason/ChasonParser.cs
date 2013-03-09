@@ -18,7 +18,7 @@ namespace Chason
     /// This class decodes JSON strings.
     /// Spec. details, see http://www.json.org/
     /// </summary>
-    /// <remarks>Code taken from fastJSON implementation at fastjson.codeplex.com</remarks>
+    /// <remarks>Code adapted from fastJSON implementation at http://fastjson.codeplex.com/ </remarks>
     internal sealed class ChasonParser
     {
         #region Static Fields
@@ -90,9 +90,7 @@ namespace Chason
             { typeof(DateTimeOffset), "ParseDateTimeOffset" },
             { typeof(DateTimeOffset[]), "ParseDateTimeOffsetArray" },
             { typeof(TimeSpan), "ParseTimeSpan" },
-            { typeof(TimeSpan[]), "ParseTimeSpanArray" },
-            { typeof(TimeZoneInfo), "ParseTimeZoneInfo" },
-            { typeof(TimeZoneInfo[]), "ParseTimeZoneInfoArray" },
+            { typeof(TimeSpan[]), "ParseTimeSpanArray" }
         };
 
         #endregion
@@ -277,7 +275,8 @@ namespace Chason
                 var textVariable = Expression.Variable(typeof(string));
                 var parseCall = Expression.Convert(Expression.Call(parseMethod, textVariable), type);
                 var assignToParseNumber = Expression.Assign(textVariable, Expression.Call(parserParameter, NumberTypes.Contains(underlyingType) ? "ParseNumber" : "ParseString", new Type[0]));
-                var condition = Expression.Condition(Expression.Equal(textVariable, Expression.Constant(null, typeof(string))), 
+                var condition = Expression.Condition(
+                    Expression.Equal(textVariable, Expression.Constant(null, typeof(string))), 
                     Expression.Constant(null, type), 
                     parseCall);
                 
@@ -591,25 +590,6 @@ namespace Chason
 
         /// <summary>
         /// </summary>
-        /// <returns>
-        /// </returns>
-        internal TimeZoneInfo ParseTimeZoneInfo()
-        {
-            throw new NotSupportedException("Not supported by WinRT");
-            ////return TimeZoneInfo.froms(this.ParseString());
-        }
-
-        /// <summary>
-        /// </summary>
-        /// <returns>
-        /// </returns>
-        internal TimeZoneInfo[] ParseTimeZoneInfoArray()
-        {
-            return this.ParseArray(this.ParseTimeZoneInfo);
-        }
-
-        /// <summary>
-        /// </summary>
         /// <param name="parse">
         /// </param>
         /// <typeparam name="TList">
@@ -788,7 +768,7 @@ namespace Chason
 
             if (this.index == this.json.Length)
             {
-                throw new SerializationException("Reached end of string unexpectedly");
+                throw new SerializationException("Unexpectedly reached end of string");
             }
 
             c = this.json[this.index];
@@ -887,7 +867,7 @@ namespace Chason
                     break;
             }
 
-            throw new SerializationException("Could not find token at index " + --this.index);
+            throw new SerializationException("Could not find any token at index " + --this.index);
         }
 
         internal bool? ParseNullableBoolean()
@@ -945,7 +925,7 @@ namespace Chason
                 {
                     if (++this.index == this.json.Length)
                     {
-                        throw new SerializationException("Unexpected end of string whilst parsing number");
+                        throw new SerializationException("Unexpected end of string while parsing number");
                     }
 
                     continue;
@@ -973,7 +953,7 @@ namespace Chason
             var instance = instanceParser.New();
             if (this.LookAhead() != Token.CurlyOpen)
             {
-                throw new SerializationException("Expected curly open at index " + this.index);
+                throw new SerializationException("Expected '{' at index " + this.index);
             }
 
             this.ConsumeToken(); // {
@@ -998,7 +978,7 @@ namespace Chason
                             // :
                             if (this.NextToken() != Token.Colon)
                             {
-                                throw new SerializationException("Expected colon at index " + this.index);
+                                throw new SerializationException("Expected ':' at index " + this.index);
                             }
 
                             instanceParser.Parse(this, instance, name);
@@ -1027,7 +1007,7 @@ namespace Chason
             var instance = new Dictionary<string, string>();
             if (this.LookAhead() != Token.CurlyOpen)
             {
-                throw new SerializationException("Expected curly open at index " + this.index);
+                throw new SerializationException("Expected '{' at index " + this.index);
             }
 
             this.ConsumeToken(); // {
@@ -1052,7 +1032,7 @@ namespace Chason
                             // :
                             if (this.NextToken() != Token.Colon)
                             {
-                                throw new SerializationException("Expected colon at index " + this.index);
+                                throw new SerializationException("Expected ':' at index " + this.index);
                             }
 
                             instance[name] = this.ParseString();

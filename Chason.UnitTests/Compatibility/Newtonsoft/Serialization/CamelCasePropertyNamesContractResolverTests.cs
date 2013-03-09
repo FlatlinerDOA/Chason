@@ -38,6 +38,8 @@ namespace Newtonsoft.Json.Tests.Serialization
     using Chason;
     using Chason.UnitTests.Compatibility.Newtonsoft;
 
+    using FluentAssertions;
+
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -46,7 +48,7 @@ namespace Newtonsoft.Json.Tests.Serialization
     [TestMethod]
     public void JsonConvertSerializerSettings()
     {
-      Person person = new Person();
+      var person = new Person();
       person.BirthDate = new DateTime(2000, 11, 20, 23, 55, 44, DateTimeKind.Utc);
       person.LastModified = new DateTime(2000, 11, 20, 23, 55, 44, DateTimeKind.Utc);
       person.Name = "Name!";
@@ -54,15 +56,16 @@ namespace Newtonsoft.Json.Tests.Serialization
       string json = ChasonSerializer.SerializeToString(person, new ChasonSerializerSettings()
                                                                {
                                                                    PropertyNameComparer = StringComparer.OrdinalIgnoreCase,
-                                                                   OutputFormattedJson = true
-                                                                   ////ContractResolver = new CamelCasePropertyNamesContractResolver()
+                                                                   OutputFormattedJson = true,
+                                                                   OutputCamelCasePropertyNames = true,
+                                                                   DateTimeFormat = @"\/Date(t)\/"
                                                                });
 
-      Assert.AreEqual(@"{
+      json.Should().Be(@"{
   ""name"": ""Name!"",
   ""birthDate"": ""\/Date(974764544000)\/"",
   ""lastModified"": ""\/Date(974764544000)\/""
-}", json);
+}");
 
       Person deserializedPerson = ChasonSerializer.DeserializeFromString<Person>(json, new ChasonSerializerSettings
                                                                         {
@@ -74,11 +77,11 @@ namespace Newtonsoft.Json.Tests.Serialization
       Assert.AreEqual(person.Name, deserializedPerson.Name);
 
       json = ChasonSerializer.SerializeToString(person, new ChasonSerializerSettings() { OutputFormattedJson = true });
-      Assert.AreEqual(@"{
+      json.Should().Be(@"{
   ""Name"": ""Name!"",
   ""BirthDate"": ""\/Date(974764544000)\/"",
   ""LastModified"": ""\/Date(974764544000)\/""
-}", json);
+}");
 
     }
 
@@ -144,7 +147,7 @@ namespace Newtonsoft.Json.Tests.Serialization
                             ExpiryDate = new DateTime(2010, 12, 20, 18, 1, 0, DateTimeKind.Utc),
                             Name = "Widget",
                             Price = 9.99m,
-                            Sizes = new[] {"Small", "Medium", "Large"}
+                            Sizes = new[] { "Small", "Medium", "Large" }
                           };
 
       string json = 
@@ -169,16 +172,16 @@ namespace Newtonsoft.Json.Tests.Serialization
       //  ]
       //}
 
-      Assert.AreEqual(@"{
+      json.Should().Be(@"{
   ""name"": ""Widget"",
-  ""expiryDate"": ""\/Date(1292868060000)\/"",
+  ""expiryDate"": ""2010-12-20T18:01:00"",
   ""price"": 9.99,
   ""sizes"": [
     ""Small"",
     ""Medium"",
     ""Large""
   ]
-}", json);
+}");
     }
 
 #if !(NET35 || NET20 || WINDOWS_PHONE)
@@ -209,19 +212,20 @@ namespace Newtonsoft.Json.Tests.Serialization
     [TestMethod]
     public void DictionaryCamelCasePropertyNames()
     {
-      Dictionary<string, string> values = new Dictionary<string, string>
+      var values = new Dictionary<string, string>
         {
-          {"First", "Value1!"},
-          {"Second", "Value2!"}
+          { "First", "Value1!" },
+          { "Second", "Value2!" }
         };
 
-      string json = ChasonSerializer.SerializeToString(values, 
-        new ChasonSerializerSettings
-        {
-            PropertyNameComparer = StringComparer.OrdinalIgnoreCase,
-            OutputFormattedJson = true,
-            OutputCamelCasePropertyNames = true
-        });
+      string json = ChasonSerializer.SerializeToString(
+          values, 
+          new ChasonSerializerSettings
+          {
+              PropertyNameComparer = StringComparer.OrdinalIgnoreCase,
+              OutputFormattedJson = true,
+              OutputCamelCasePropertyNames = true
+          });
 
       Assert.AreEqual(@"{
   ""first"": ""Value1!"",

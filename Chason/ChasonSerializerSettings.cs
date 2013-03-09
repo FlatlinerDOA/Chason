@@ -33,6 +33,11 @@ namespace Chason
         public const string DefaultTypeMarkerName = "$type";
 
         /// <summary>
+        /// Date time format that uses javascript Date(ticks) object
+        /// </summary>
+        public const string JavascriptDateObjectDateTimeFormat = @"\/Date(t)\/";
+
+        /// <summary>
         /// Gets the default settings
         /// </summary>
         public static readonly ChasonSerializerSettings Default = new ChasonSerializerSettings();
@@ -131,8 +136,6 @@ namespace Chason
             this.DateTimeStyles = DateTimeStyles.None;
             this.PropertyNameComparer = StringComparer.Ordinal;
             this.typeMarkerName = DefaultTypeMarkerName;
-
-            this.AddCommonTypes();
         }
 
         /// <summary>
@@ -268,6 +271,16 @@ namespace Chason
             {
                 this.EnsureNotReadOnly();
                 this.dateTimeFormatString = value;
+                if (value == JavascriptDateObjectDateTimeFormat)
+                {
+                    this.SetStringFormatter(
+                        dt => "\\/Date(" + dt.Ticks.ToString(this.CultureInfo) + ")\\/",
+                        dt => new DateTime(int.Parse(dt.Substring(7, dt.Length - 10), this.CultureInfo)));
+                }
+                else
+                {
+                    this.SetStringFormatter(dt => dt.ToString(this.DateTimeFormat, this.CultureInfo), dt => DateTime.ParseExact(dt, this.DateTimeFormat, this.CultureInfo, this.DateTimeStyles));
+                }
             }
         }
 
@@ -286,6 +299,9 @@ namespace Chason
             {
                 this.EnsureNotReadOnly();
                 this.dateTimeOffsetFormat = value;
+                this.SetStringFormatter(
+                    dt => dt.ToString(this.DateTimeOffsetFormat, this.CultureInfo),
+                    dt => DateTimeOffset.ParseExact(dt, this.DateTimeOffsetFormat, this.CultureInfo, this.DateTimeStyles));
             }
         }
 
@@ -337,6 +353,9 @@ namespace Chason
             {
                 this.EnsureNotReadOnly();
                 this.timeSpanFormat = value;
+                this.SetStringFormatter(
+                    dt => dt.ToString(this.TimeSpanFormat, this.CultureInfo),
+                    dt => TimeSpan.ParseExact(dt, this.TimeSpanFormat, this.CultureInfo, this.TimeSpanStyles));
             }
         }
 
@@ -398,11 +417,11 @@ namespace Chason
         /// <typeparam name="T"></typeparam>
         /// <param name="toString">Expression to convert a instance of a type to the JSON literal string.</param>
         /// <param name="fromString">Expression to convert a JSON literal string to an instance of a type.</param>
-        public void AddCustomStringFormatter<T>(Expression<Func<T, string>> toString, Expression<Func<string, T>> fromString)
+        public void SetStringFormatter<T>(Expression<Func<T, string>> toString, Expression<Func<string, T>> fromString)
         {
             this.EnsureNotReadOnly();
-            this.CustomStringWriters.Add(typeof(T), toString);
-            this.CustomStringReaders.Add(typeof(T), fromString);
+            this.CustomStringWriters[typeof(T)] = toString;
+            this.CustomStringReaders[typeof(T)] = fromString;
         }
 
         /// <summary>
@@ -411,11 +430,11 @@ namespace Chason
         /// <typeparam name="T"></typeparam>
         /// <param name="toNumber"></param>
         /// <param name="fromNumber"></param>
-        public void AddCustomNumberFormatter<T>(Expression<Func<T, decimal>> toNumber, Expression<Func<decimal, T>> fromNumber)
+        public void SetNumberFormatter<T>(Expression<Func<T, decimal>> toNumber, Expression<Func<decimal, T>> fromNumber)
         {
             this.EnsureNotReadOnly();
-            this.CustomNumberWriters.Add(typeof(T), toNumber);
-            this.CustomNumberReaders.Add(typeof(T), fromNumber);
+            this.CustomNumberWriters[typeof(T)] = toNumber;
+            this.CustomNumberReaders[typeof(T)] = fromNumber;
         }
 
         /// <summary>
@@ -424,11 +443,11 @@ namespace Chason
         /// <typeparam name="T"></typeparam>
         /// <param name="toDictionary">Expression to convert a instance of a type to the JSON literal string. Note: You must output the Quotes or Curly braces yourself if your type is string or object based etc.</param>
         /// <param name="fromDictionary">Expression to convert a instance of a type to the JSON literal string. Note: You must parse the Quotes or Curly braces yourself if your type is string or object based etc.</param>
-        public void AddCustomDictionaryFormatter<T>(Expression<Func<T, IDictionary<string, string>>> toDictionary, Expression<Func<IDictionary<string, string>, T>> fromDictionary)
+        public void SetDictionaryFormatter<T>(Expression<Func<T, IDictionary<string, string>>> toDictionary, Expression<Func<IDictionary<string, string>, T>> fromDictionary)
         {
             this.EnsureNotReadOnly();
-            this.CustomStringWriters.Add(typeof(T), toDictionary);
-            this.CustomStringReaders.Add(typeof(T), fromDictionary);
+            this.CustomStringWriters[typeof(T)] = toDictionary;
+            this.CustomStringReaders[typeof(T)] = fromDictionary;
         }
 
         /// <summary>
@@ -499,7 +518,7 @@ namespace Chason
                 this.KnownTypes = new ReadOnlyHashSet<Type>(this.KnownTypes);
                 foreach (var knownType in this.KnownTypes)
                 {
-                    var name = ChasonSerializer.GetDataContractFullName(knownType);
+                    var name = Reflect.GetDataContractFullName(knownType);
                     this.typeToNameMapping[knownType] = name;
                     this.nameToTypeMapping[name] = knownType;
                 }
@@ -518,22 +537,6 @@ namespace Chason
         public ChasonSerializerSettings Clone()
         {
             return new ChasonSerializerSettings(this);
-        }
-
-        /// <summary>
-        /// Adds common types
-        /// </summary>
-        private void AddCommonTypes()
-        {
-            this.AddCustomStringFormatter(
-                dt => dt.ToString(this.DateTimeFormat, this.CultureInfo), 
-                dt => DateTime.ParseExact(dt, this.DateTimeFormat, this.CultureInfo, this.DateTimeStyles));
-            this.AddCustomStringFormatter(
-                dt => dt.ToString(this.DateTimeOffsetFormat, this.CultureInfo),
-                dt => DateTimeOffset.ParseExact(dt, this.DateTimeOffsetFormat, this.CultureInfo, this.DateTimeStyles));
-            this.AddCustomStringFormatter(
-                dt => dt.ToString(this.TimeSpanFormat, this.CultureInfo),
-                dt => TimeSpan.ParseExact(dt, this.TimeSpanFormat, this.CultureInfo, this.TimeSpanStyles));
         }
 
         /// <summary>

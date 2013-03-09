@@ -56,7 +56,7 @@ namespace Chason.UnitTests.Serializing.Formatting
         public void InitializeTest()
         {
             var settings = new ChasonSerializerSettings();
-            settings.AddCustomNumberFormatter(d => d.Ticks, d => new TimeStamp((long)d));
+            settings.SetNumberFormatter(d => d.Ticks, d => new TimeStamp((long)d));
             this.serializer = new ChasonSerializer<ContractWithCustomNumberType>(settings);
             this.result = this.serializer.Serialize(new ContractWithCustomNumberType() {
                                                                                            Name = "Frank",
