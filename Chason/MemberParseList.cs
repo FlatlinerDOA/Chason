@@ -52,6 +52,8 @@ namespace Chason
         /// </summary>
         private IEnumerator<MemberParser<T>> iterator;
 
+        private readonly IEqualityComparer<string> comparer;
+
         #endregion
 
         #region Constructors and Destructors
@@ -66,6 +68,7 @@ namespace Chason
             var jsonParameter = Expression.Parameter(typeof(ChasonParser), "j");
             var instanceParameter = Expression.Parameter(typeof(T), "i");
             var members = Reflect.GetObjectMemberContracts(typeof(T));
+            this.comparer = settings.PropertyNameComparer;
             this.sequential = new List<MemberParser<T>>();
             foreach (var m in members)
             {
@@ -78,6 +81,14 @@ namespace Chason
                 else if (settings.CustomNumberReaders.ContainsKey(memberType))
                 {
                     parser = new MemberParser<T>(m, jsonParameter, instanceParameter, settings.CustomNumberReaders[memberType]);
+                }
+                else if (settings.CustomLiteralReaders.ContainsKey(memberType))
+                {
+                    parser = new MemberParser<T>(m, jsonParameter, instanceParameter, settings.CustomLiteralReaders[memberType]);
+                }
+                else if (settings.CustomDictionaryReaders.ContainsKey(memberType))
+                {
+                    parser = new MemberParser<T>(m, jsonParameter, instanceParameter, settings.CustomDictionaryReaders[memberType]);
                 }
                 else
                 {
@@ -120,7 +131,7 @@ namespace Chason
 
             while (this.iterator.MoveNext())
             {
-                if (this.iterator.Current.Name == name)
+                if (this.comparer.Equals(this.iterator.Current.Name, name))
                 {
                     this.iterator.Current.Parse(parser, instance);
                     return;

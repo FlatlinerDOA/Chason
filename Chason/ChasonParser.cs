@@ -280,7 +280,7 @@ namespace Chason
         /// </param>
         /// <returns>
         /// </returns>
-        internal static Expression GetParseMethodCall(Type type, ParameterExpression parserParameter)
+        internal static Expression GetParseMethodCall(Type type, ParameterExpression parserParameter, ChasonSerializerSettings settings)
         {
             if (TypeParseMethods.ContainsKey(type))
             {
@@ -306,22 +306,6 @@ namespace Chason
                     parseCall);
                 
                 return Expression.Block(type, new[] { textVariable }, assignToParseNumber, condition);
-                ////var lambda = Expression.Lambda(parseCall, textParameter);
-                ////if (NumberTypes.Contains(underlyingType))
-                ////{
-                ////    var x = Expression.Call(parserParameter, "ParseNullableNumberLambda", new Type[0], new Expression[] { lambda });
-                ////    return x;
-                ////}
-
-                ////return Expression.Call(parserParameter, "ParseNullableStringLambda", new Type[0], new Expression[] { lambda });
-              
-                // Convert(Call CreateDelegate(Type, null, MethodInfo))
-                ////var tryParseDelegateType = typeof(TryParseDelegate<>).MakeGenericType(underlyingType);
-                ////var methodInfo = underlyingType.GetMethods().FirstOrDefault(m => m.Name == "TryParse" && m.GetParameters().Length == 2);
-                ////var createDelegate = Expression.Call(typeof(Delegate), "CreateDelegate", new Type[0], Expression.Constant(tryParseDelegateType), Expression.Constant(methodInfo));
-                ////var convert = Expression.Convert(createDelegate, tryParseDelegateType);
-                ////var methodName = NumberTypes.Contains(underlyingType) ? "ParseNullableNumber" : "ParseNullableString";
-                ////return Expression.Call(parserParameter, methodName, new[] { underlyingType }, convert);
             }
             
             if (type.IsGenericType)
