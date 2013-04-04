@@ -175,7 +175,7 @@ namespace Chason
             ConstructorInfo ctorInfo = typeof(T).GetConstructor(argTypes);
             if (ctorInfo == null)
             {
-                throw new ArgumentException(string.Concat("The type ", typeof(T).Name, " has no constructor with the argument type(s) ", string.Join(", ", argTypes.Select(t => t.Name).ToArray()), "."), "argTypes");
+                throw new ArgumentException(string.Concat("The type ", typeof(T).Name, " has no constructor with the argument type(s) ", string.Join(", ", argTypes.Select(t => t.Name).DefaultIfEmpty("(None)").ToArray()), "."), "argTypes");
             }
 
             return Expression.Lambda<Func<T>>(Expression.New(ctorInfo));

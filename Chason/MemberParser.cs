@@ -19,8 +19,7 @@ namespace Chason
         /// <summary>
         /// Initializes a new instance of the PropertyParser class.
         /// </summary>
-        /// <param name="dataMember">The data member declaration for the property, specifying expected order and property name</param>
-        /// <param name="info">The property info</param>
+        /// <param name="memberContract">The data member declaration for the property, specifying expected order and property name</param>
         /// <param name="parserParameter">An expression that will reference the <see cref="ChasonParser"/> instance, passed as a parameter</param>
         /// <param name="instanceParameter">An expression that will reference the instance the property is to be assigned to, passed as a parameter</param>
         public MemberParser(MemberContractMap memberContract, ParameterExpression parserParameter, ParameterExpression instanceParameter)
@@ -33,6 +32,13 @@ namespace Chason
             this.Parse = Expression.Lambda<Action<ChasonParser, T>>(this.SetExpression, parserParameter, instanceParameter).Compile();
         }
 
+        /// <summary>
+        /// Initializes a new instance of the PropertyParser class.
+        /// </summary>
+        /// <param name="memberContract"></param>
+        /// <param name="parserParameter"></param>
+        /// <param name="instanceParameter"></param>
+        /// <param name="readExpression"></param>
         public MemberParser(MemberContractMap memberContract, ParameterExpression parserParameter, ParameterExpression instanceParameter, Expression readExpression)
         {
             this.Name = memberContract.Name;

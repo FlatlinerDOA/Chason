@@ -236,10 +236,12 @@ namespace Chason
             
             ////if (this.settings.CustomLiteralReaders.ContainsKey(type))
             ////{
+            ////    return ((Expression<Func<string, T>>)this.settings.CustomLiteralReaders[type]).Compile()(this.ParseNumber());
             ////}
             
             ////if (this.settings.CustomDictionaryReaders.ContainsKey(type))
             ////{
+            ////    return ((Expression<Func<string, T>>)this.settings.CustomDictionaryReaders[type]).Compile()(this.ParseNumber());
             ////}
             
             if (type.IsArray)
@@ -280,7 +282,7 @@ namespace Chason
         /// </param>
         /// <returns>
         /// </returns>
-        internal static Expression GetParseMethodCall(Type type, ParameterExpression parserParameter, ChasonSerializerSettings settings)
+        internal static Expression GetParseMethodCall(Type type, ParameterExpression parserParameter)
         {
             if (TypeParseMethods.ContainsKey(type))
             {
