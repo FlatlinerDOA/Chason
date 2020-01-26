@@ -62,6 +62,9 @@ namespace Chason
             this.settings = settings;
             var block = this.WriteObjectBlock();
             this.serializeMethod = block.Compile();
+////#if DEBUG
+////            this.serializeMethod(Activator.CreateInstance<T>(), new StringWriter());
+////#endif
         }
 
         #endregion
@@ -294,7 +297,7 @@ namespace Chason
             {
                 yield return this.WriteObjectAsDictionary(getterCall, type, writer, depth, this.settings.CustomDictionaryWriters[type]);
             }
-            else if (type.IsArray)
+            else if (type.IsArray || type.IsCollection())
             {
                 yield return this.WriteArray(getterCall, type, writer, depth);
             }
@@ -360,7 +363,7 @@ namespace Chason
 
         private Expression WriteArray(Expression getterCall, Type memberType, ParameterExpression writer, int depth)
         {
-            var elementType = memberType.GetElementType();
+            var elementType = memberType.IsArray ? memberType.GetElementType() : memberType.GetGenericArguments()[0];
             var enumerableType = typeof(IEnumerable<>).MakeGenericType(elementType);
             var writeMethod = this.GetType().GetMethod("WriteArrayValues", BindingFlags.Public | BindingFlags.Static).MakeGenericMethod(elementType);
             var writeValues = Expression.Call(

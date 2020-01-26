@@ -312,10 +312,13 @@ namespace Chason
             
             if (type.IsGenericType)
             {
-                var generic = type.GetGenericTypeDefinition();
-                if (typeof(ICollection<>).IsAssignableFrom(generic))
+                var elementType = type.GetGenericArguments()[0];
+                if (typeof(ICollection<>).MakeGenericType(elementType).IsAssignableFrom(type))
                 {
-                    return Expression.Call(parserParameter, "ParseCollection", new[] { type });
+                    var arrayValueParseMethod = GetParseMethodCall(elementType, parserParameter);
+                    var funcType = typeof(Func<,>).MakeGenericType(typeof(ChasonParser), elementType);
+                    var func = Expression.Lambda(funcType, arrayValueParseMethod, parserParameter).Compile();
+                    return Expression.Call(parserParameter, "ParseCollection", new[] { type, elementType }, Expression.Constant(func));
                 }
                 else
                 {
@@ -597,6 +600,11 @@ namespace Chason
         internal TimeSpan[] ParseTimeSpanArray()
         {
             return this.ParseArray(this.ParseTimeSpan);
+        }
+
+        public TList ParseCollection<TList, TItem>(Func<ChasonParser, TItem> parse) where TList : ICollection<TItem>
+        {
+            return this.ParseCollection<TList, TItem>(() => parse(this));
         }
 
         /// <summary>

@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -8,7 +8,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Chason.UnitTests</RootNamespace>
     <AssemblyName>Chason.UnitTests</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{3AC096D0-A1C2-E12C-1390-A8335801FDAB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
@@ -16,6 +16,7 @@
     <ReferencePath>$(ProgramFiles)\Common Files\microsoft shared\VSTT\$(VisualStudioVersion)\UITestExtensionPackages</ReferencePath>
     <IsCodedUITest>False</IsCodedUITest>
     <TestProjectType>UnitTest</TestProjectType>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -164,10 +165,12 @@
     <Compile Include="Deserializing\DeserializingCustomNumberTypes.cs" />
     <Compile Include="Deserializing\DeserializingDictionaries.cs" />
     <Compile Include="Deserializing\DeserializingHashSets.cs" />
+    <Compile Include="Deserializing\DeserializingLists.cs" />
     <Compile Include="Deserializing\DeserializingValueTypes.cs" />
     <Compile Include="Deserializing\DeserializingNullableValueTypes.cs" />
     <Compile Include="Deserializing\DeserializingASimpleJsonString.cs" />
     <Compile Include="Serializing\Formatting\CustomNumberValueType.cs" />
+    <Compile Include="Serializing\SerializingGenericLists.cs" />
     <Compile Include="Serializing\SerializingNullableValueTypes.cs" />
     <Compile Include="Serializing\Formatting\PropertyNameFormatting.cs" />
     <Compile Include="Serializing\SerializingArrays.cs" />
@@ -177,16 +180,16 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Chason\Chason.csproj">
-      <Project>{F9FF23D0-B631-45C5-84FE-E3ED3ABAA1FD}</Project>
-      <Name>Chason</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Deserializing\Polymorphic\" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Chason\Chason.csproj">
+      <Project>{f9ff23d0-b631-45c5-84fe-e3ed3abaa1fd}</Project>
+      <Name>Chason</Name>
+    </ProjectReference>
   </ItemGroup>
   <Choose>
     <When Condition="'$(VisualStudioVersion)' == '10.0' And '$(IsCodedUITest)' == 'True'">
