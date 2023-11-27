@@ -180,7 +180,7 @@ namespace Chason.PerformanceTests
         {
             for (int i = 0; i < count; i++)
             {
-                var s2 = ServiceStack.Text.Json.JsonReader<SimpleObject>.Parse(TestJson);
+                var s2 = ServiceStack.Text.Json.JsonReader.Instance.GetParseFn<SimpleObject>()(TestJson);
             }
         }
 

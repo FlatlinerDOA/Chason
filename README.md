@@ -1,31 +1,39 @@
 Chason
 ======
-
-On a project I was working on, we noticed 30% of all our code execution was spent either serializing or deserializing JSON.
+On a project I was working on (back in 2013), we noticed 30% of all our code execution was spent either serializing or deserializing JSON.
 Clearly there was room for improvement. The goal of Chason (pronounced 'chase on') is to see if I can catch and even beat 
 the best of the best JSON serializers out there.
 
-Goals for the project are:
-- Fast! (as fast as .NET will let us go)
+When I first developed this serializers were MUCH slower than they are today, 
+having said that it's good to see my code still keeping up with some of the best of them.
+
+Goals for the project
+---------------------
+- Prove the concept that JSON serializers could be faster! (see how fast .NET will let us go)
 - Easily customizable type output with pluggable formatters (including support for your own value types converted to and from JSON)
 - Full polymorphic support with internal type to external name mapping.
 - Optimize for strongly typed data contracts with an explicitly specified member order (to improve perf even more)
-- Portable Library support (initially only .NET 4.5 and WinRT)
+- .NET Standard 2.1
+
+Non goals
+---------
+- Feature parity with all other serializers.
+- AOT support with code generators, there are better methods for that these days.
 
 Initial Performance Results 
 ---------------------------
 |Test|Iterations|Time (ms)|Objects / sec|
 |:---|---------:|--------:|------------:|
-|SerializeChason|1,000,000|2,904|344,270.2|
-|SerializeServiceStack|1,000,000|3,186|313,813.0|
-|SerializeJsonNet|1,000,000|5,756|173,708.6|
-|SerializeFastJson|10,000|13,137|76,115.6|
-|SerializeDataContractJson|1,000,000|5,961|167,747.2|
-|DeserializeChason|1,000,000|2,827|353,664.2|
-|DeserializeServiceStack|1,000,000|3,981|251,167.1|
-|DeserializeJsonNet|1,000,000|10,835|92,289.5|
-|DeserializeFastJson|1,000,000|3,245|308,082.7|
-|DeserializeDataContractJson|1,000,000|16,214|61,675.1|
+|SerializeChason|1,000,000|948|1,054,526.4|
+|SerializeServiceStack|1,000,000|2,864|349,117.8|
+|SerializeJsonNet|1,000,000|3,292|303,759.8|
+|SerializeFastJson|1,000,000|2,983|335,128.1|
+|SerializeDataContractJson|1,000,000|1,694|590,081.8|
+|DeserializeChason|1,000,000|1,886|530,207.5|
+|DeserializeServiceStack|1,000,000|201,340|4,966.7|
+|DeserializeJsonNet|1,000,000|1,710|584,574.8|
+|DeserializeFastJson|1,000,000|1,631|613,094.7|
+|DeserializeDataContractJson|1,000,000|5,332|187,531.7|
 
 Note
 ----
@@ -33,7 +41,7 @@ Note
 - Chason is unfinished and different test scenarios would probably fail.
 - fastJSON serialization is quite fast in small iterations but became exponentially slow at 1,000,000 iterations so the iteration count was reduced to 10,000.
 - Test is a single instance of a simple object being serialized / deserialized against common implementations
-- Tests were run on a Core i7 2.66GHz MacBook Pro with 4G RAM and an SSD, on Windows 8 64bit. (Experience Index 5.9)
+- Tests were run on a AMD Ryzen 9 5950x 16-core processor on Windows 11
 
 
 Some of the code is based on a heavily modified version of fastJSON for deserialization.
@@ -43,6 +51,7 @@ Some of the code is based on a heavily modified version of fastJSON for deserial
 
 The license for this is MIT.
 
-The chase is on!
 
-Andrew Chisholm
+> The chase is on!
+>
+> Andrew Chisholm
