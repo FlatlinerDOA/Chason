@@ -607,19 +607,19 @@ namespace Chason
             return this.ParseCollection<TList, TItem>(() => parse(this));
         }
 
-        /// <summary>
-        /// </summary>
-        /// <param name="parse">
-        /// </param>
-        /// <typeparam name="TList">
-        /// </typeparam>
-        /// <typeparam name="TItem">
-        /// </typeparam>
-        /// <returns>
-        /// </returns>
         internal TList ParseCollection<TList, TItem>(Func<TItem> parse) where TList : ICollection<TItem>
         {
-            var array = MemberParseList<TList>.Instance.New();
+            var list = Activator.CreateInstance<TList>();
+            foreach (var item in this.ParseEnumerable<TItem>(parse))
+            {
+                list.Add(item);
+            }
+
+            return list;          
+        }
+
+        internal IEnumerable<TItem> ParseEnumerable<TItem>(Func<TItem> parse)
+        {
             if (this.LookAhead() != Token.SquaredOpen)
             {
                 throw new SerializationException("Expected '[' at index " + this.index);
@@ -637,9 +637,9 @@ namespace Chason
 
                     case Token.SquaredClose:
                         this.ConsumeToken();
-                        return array;
+                        yield break;
                     default:
-                        array.Add(parse());
+                        yield return parse();
                         break;
                 }
             }

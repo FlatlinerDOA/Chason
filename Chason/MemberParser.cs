@@ -28,8 +28,17 @@ namespace Chason
             this.Sequence = memberContract.SortOrder;
             var memberType = memberContract.Member.MemberType();
             var parseCall = ChasonParser.GetParseMethodCall(memberType, parserParameter);
-            this.SetExpression = Expression.Assign(Expression.MakeMemberAccess(instanceParameter, memberContract.Member), parseCall);
-            this.Parse = Expression.Lambda<Action<ChasonParser, T>>(this.SetExpression, parserParameter, instanceParameter).Compile();
+            if (memberContract.Member is PropertyInfo p && p.CanWrite)
+            {
+                this.SetExpression = Expression.Assign(Expression.MakeMemberAccess(instanceParameter, memberContract.Member), parseCall);
+                this.Parse = Expression.Lambda<Action<ChasonParser, T>>(this.SetExpression, parserParameter, instanceParameter).Compile();
+            }
+            else
+            {
+                this.SetExpression = Expression.Empty();
+                this.Parse = new Action<ChasonParser, T>((_, __) => { });
+            }
+
         }
 
         /// <summary>

@@ -1,195 +1,45 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{0433642C-825A-430D-BCB0-6D0FF2717BC6}</ProjectGuid>
+    <TargetFramework>netstandard2.1</TargetFramework>
     <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Chason.UnitTests</RootNamespace>
-    <AssemblyName>Chason.UnitTests</AssemblyName>
-    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <ProjectTypeGuids>{3AC096D0-A1C2-E12C-1390-A8335801FDAB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
-    <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
-    <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
-    <ReferencePath>$(ProgramFiles)\Common Files\microsoft shared\VSTT\$(VisualStudioVersion)\UITestExtensionPackages</ReferencePath>
-    <IsCodedUITest>False</IsCodedUITest>
-    <TestProjectType>UnitTest</TestProjectType>
-    <TargetFrameworkProfile />
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-  </PropertyGroup>
-  <ItemGroup>
-    <Reference Include="FluentAssertions">
-      <HintPath>..\packages\FluentAssertions.2.0.0.1\lib\net45\FluentAssertions.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System" />
-    <Reference Include="System.Runtime.Serialization" />
-    <Reference Include="System.Xml" />
-    <Reference Include="System.Xml.Linq" />
-  </ItemGroup>
   <Choose>
     <When Condition="('$(VisualStudioVersion)' == '10.0' or '$(VisualStudioVersion)' == '') and '$(TargetFrameworkVersion)' == 'v3.5'">
       <ItemGroup>
         <Reference Include="Microsoft.VisualStudio.QualityTools.UnitTestFramework, Version=10.1.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
       </ItemGroup>
     </When>
-    <Otherwise>
-      <ItemGroup>
-        <Reference Include="Microsoft.VisualStudio.QualityTools.UnitTestFramework" />
-      </ItemGroup>
-    </Otherwise>
+    <Otherwise />
   </Choose>
   <ItemGroup>
-    <Compile Include="Compatibility\Newtonsoft\Serialization\CamelCasePropertyNamesContractResolverTests.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestFixtureBase.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\AbstractGenericBase.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\ArgumentConverterPrecedenceClassConverter.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\Article.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\ArticleCollection.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\BadJsonPropertyClass.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\Bar.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\Car.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\CircularReferenceClass.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\CircularReferenceWithIdClass.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\ClassAndMemberConverterClass.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\ClassConverterPrecedenceClassConverter.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\ClassWithArray.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\ClassWithGuid.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\Computer.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\ConstructorCaseSensitivityClass.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\ConstructorReadonlyFields.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\Container.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\Content.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\ContentBaseClass.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\ContentSubClass.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\ConverableMembers.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\ConverterPrecedenceClass.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\ConverterPrecedenceClassConverter.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\DateTimeErrorObjectCollection.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\DateTimeTestClass.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\DefaultValueAttributeTestClass.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\DictionaryInterfaceClass.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\DoubleClass.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\EmployeeReference.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\Event.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\Foo.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\GenericImpl.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\GenericListAndDictionaryInterfaceProperties.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\GetOnlyPropertyClass.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\GoogleMapGeocoderStructure.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\HolderClass.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\IncompatibleJsonAttributeClass.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\InterfacePropertyTestClass.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\Invoice.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\IPrivateImplementationA.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\IPrivateImplementationB.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\IPrivateOverriddenImplementation.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\JaggedArray.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\JsonIgnoreAttributeOnClassTestClass.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\JsonIgnoreAttributeTestClass.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\JsonPropertyClass.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\JsonPropertyWithHandlingValues.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\ListErrorObject.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\ListErrorObjectCollection.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\ListOfIds.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\ListTestClass.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\LogEntry.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\MemberConverterClass.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\MemberConverterPrecedenceClassConverter.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\MethodExecutorObject.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\Movie.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\MyClass.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\Name.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\NonRequest.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\NullableDateTimeTestClass.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\ObjectArrayPropertyTest.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\Person.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\PersonError.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\PersonPropertyClass.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\PersonRaw.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\PhoneNumber.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\PrivateConstructorTestClass.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\PrivateConstructorWithPublicParametizedConstructorTestClass.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\PrivateImplementationAClass.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\PrivateImplementationBClass.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\PrivateMembersClass.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\Product.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\ProductCollection.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\ProductShort.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\PropertyCase.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\PublicParametizedConstructorRequiringConverterTestClass.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\PublicParametizedConstructorTestClass.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\PublicParametizedConstructorWithNonPropertyParameterTestClass.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\PublicParametizedConstructorWithPropertyNameConflict.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\RequestOnly.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\RequiredMembersClass.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\RoleTransfer.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\SearchResult.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\SerializationEventTestDictionary.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\SerializationEventTestList.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\SerializationEventTestObject.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\SerializationEventTestObjectWithConstructor.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\SetOnlyPropertyClass.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\SetOnlyPropertyClass2.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\Shortie.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\Store.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\StoreColor.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\StructTest.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\SubKlass.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\SuperKlass.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\TypeClass.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\TypedSubHashtable.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\UserNullable.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\VersionKeyedCollection.cs" />
-    <Compile Include="Compatibility\Newtonsoft\TestObjects\WagePerson.cs" />
-    <Compile Include="Deserializing\DeserializingArrays.cs" />
-    <Compile Include="Deserializing\DeserializingCollections.cs" />
-    <Compile Include="Deserializing\DeserializingCustomNumberTypes.cs" />
-    <Compile Include="Deserializing\DeserializingDictionaries.cs" />
-    <Compile Include="Deserializing\DeserializingHashSets.cs" />
-    <Compile Include="Deserializing\DeserializingLists.cs" />
-    <Compile Include="Deserializing\DeserializingValueTypes.cs" />
-    <Compile Include="Deserializing\DeserializingNullableValueTypes.cs" />
-    <Compile Include="Deserializing\DeserializingASimpleJsonString.cs" />
-    <Compile Include="Serializing\Formatting\CustomNumberValueType.cs" />
-    <Compile Include="Serializing\SerializingGenericLists.cs" />
-    <Compile Include="Serializing\SerializingNullableValueTypes.cs" />
-    <Compile Include="Serializing\Formatting\PropertyNameFormatting.cs" />
-    <Compile Include="Serializing\SerializingArrays.cs" />
-    <Compile Include="Serializing\Formatting\WritingEscapedStrings.cs" />
-    <Compile Include="TestDataContract.cs" />
-    <Compile Include="Serializing\SerializingADataContractClass.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="packages.config" />
+    <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Deserializing\Polymorphic\" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Chason\Chason.csproj">
-      <Project>{f9ff23d0-b631-45c5-84fe-e3ed3abaa1fd}</Project>
-      <Name>Chason</Name>
-    </ProjectReference>
+    <ProjectReference Include="..\Chason\Chason.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="FluentAssertions" Version="6.12.0" />
+    <PackageReference Include="MSTest" Version="3.1.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="Compatibility\Newtonsoft\Serialization\ConstructorHandlingTests.cs" />
+    <Compile Remove="Compatibility\Newtonsoft\Serialization\ContractResolverTests.cs" />
+    <Compile Remove="Compatibility\Newtonsoft\Serialization\DefaultValueHandlingTests.cs" />
+    <Compile Remove="Compatibility\Newtonsoft\Serialization\DynamicTests.cs" />
+    <Compile Remove="Compatibility\Newtonsoft\Serialization\EntitiesSerializationTests.cs" />
+    <Compile Remove="Compatibility\Newtonsoft\Serialization\JsonPropertyCollectionTests.cs" />
+    <Compile Remove="Compatibility\Newtonsoft\Serialization\JsonSerializerTest.cs" />
+    <Compile Remove="Compatibility\Newtonsoft\Serialization\MissingMemberHandlingTests.cs" />
+    <Compile Remove="Compatibility\Newtonsoft\Serialization\NullValueHandlingTests.cs" />
+    <Compile Remove="Compatibility\Newtonsoft\Serialization\PopulateTests.cs" />
+    <Compile Remove="Compatibility\Newtonsoft\Serialization\PreserveReferencesHandlingTests.cs" />
+    <Compile Remove="Compatibility\Newtonsoft\Serialization\SerializationErrorHandlingTests.cs" />
+    <Compile Remove="Compatibility\Newtonsoft\Serialization\SerializationEventAttributeTests.cs" />
+    <Compile Remove="Compatibility\Newtonsoft\Serialization\TypeNameHandlingTests.cs" />
   </ItemGroup>
   <Choose>
     <When Condition="'$(VisualStudioVersion)' == '10.0' And '$(IsCodedUITest)' == 'True'">
@@ -209,13 +59,4 @@
       </ItemGroup>
     </When>
   </Choose>
-  <Import Project="$(VSToolsPath)\TeamTest\Microsoft.TestTools.targets" Condition="Exists('$(VSToolsPath)\TeamTest\Microsoft.TestTools.targets')" />
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
 </Project>
